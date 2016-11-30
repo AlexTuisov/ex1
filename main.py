@@ -6,3 +6,4 @@ if __name__ == '__main__':
     bigrams, words = Preprocessing.get_ngrams(2)
     trigrams, words = Preprocessing.get_ngrams(3)
     print(words[1365])
+#
