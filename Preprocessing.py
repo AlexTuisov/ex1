@@ -26,9 +26,9 @@ def preprocessing():
                 else:
                     train_set_as_dictionary[word][tag] += 1
     print(count)
-    #print(len(tags), tags)
+    print(tags)
     #print(train_set_as_dictionary)
-    return train_set_as_dictionary
+    return set(tags)
 
 #this function should take in sentence from the .wtag file,
 #and output two tuples of strings: 1. tuple of untagged words in a sentence
@@ -107,6 +107,7 @@ def get_trigrams():
 """
 def get_ngrams(n):
     ngrams_as_dictionary = {}
+    pure_sentences = {}
     with open(get_path_to_training_set()) as raw_train_set:
         for num_of_sentence, sentence in enumerate(raw_train_set):
             words, tags = prettifying_the_tagged_sentence(sentence)
@@ -125,6 +126,10 @@ def get_ngrams(n):
                     ngrams_as_dictionary[num_of_sentence][word] = [feature, ]
                 else:
                     ngrams_as_dictionary[num_of_sentence][word].append(feature)
-    return ngrams_as_dictionary
+            pure_sentences[num_of_sentence] = words[2:]
+    return ngrams_as_dictionary, pure_sentences
+
+
+
 
 #
