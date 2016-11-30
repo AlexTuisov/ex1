@@ -126,7 +126,7 @@ def get_ngrams(n):
                     ngrams_as_dictionary[num_of_sentence][word] = [feature, ]
                 else:
                     ngrams_as_dictionary[num_of_sentence][word].append(feature)
-            pure_sentences[num_of_sentence] = words[2:]
+            pure_sentences[num_of_sentence] = words[2:-2]
     return ngrams_as_dictionary, pure_sentences
 
 
