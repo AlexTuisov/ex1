@@ -5,32 +5,42 @@ class feature_maker:
     def __init__(self,special_delimiter):
         self.special_delimiter =special_delimiter
 
-    def getFeatureParamsFromIndex(self,unigrams,bigrams,trigrams):
+    def getFeatureParamsFromIndex(self,unigrams,bigrams,trigrams):#TODO: create reverese index
         paramsIndex = {}
+        reverese_param_index = {}
         index_number = 0
-        for index in unigrams:
-            sentence = unigrams[index]
+        for index in unigrams[0]:
+            sentence = unigrams[0][index]
             for word in sentence:
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0])
                 if not paramsIndex.get(word_with_tag,False):
-                    paramsIndex[word_with_tag]=index_number
+                    paramsIndex[word_with_tag]=[index_number,1]
+                    reverese_param_index[index_number] = word_with_tag
                     index_number += 1
-        for index in bigrams:
-            sentence = bigrams[index]
+                else:
+                    paramsIndex[word_with_tag][1] += 1
+        for index in bigrams[0]:
+            sentence = bigrams[0][index]
             for word in sentence:
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0])+self.special_delimiter+str(sentence[word][0][1])
                 if not paramsIndex.get(word_with_tag,False):
-                    paramsIndex[word_with_tag]=index_number
+                    paramsIndex[word_with_tag] = [index_number,1]
+                    reverese_param_index[index_number] = word_with_tag
                     index_number += 1
-        for index in trigrams:
-            sentence = trigrams[index]
+                else:
+                    paramsIndex[word_with_tag][1] += 1
+        for index in trigrams[0]:
+            sentence = trigrams[0][index]
             for word in sentence:
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0])+self.special_delimiter+str(sentence[word][0][1])+self.special_delimiter+str(sentence[word][0][2])#TODO : make more generic
                 if not paramsIndex.get(word_with_tag,False):
-                    paramsIndex[word_with_tag]=index_number
+                    paramsIndex[word_with_tag]=[index_number,1]
+                    reverese_param_index[index_number] = word_with_tag
                     index_number += 1
+                else:
+                    paramsIndex[word_with_tag][1] += 1
         print("number of feature dims is ",index_number)
-        return index_number,paramsIndex
+        return index_number,paramsIndex,reverese_param_index
 
 
     """"

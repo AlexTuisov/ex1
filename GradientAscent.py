@@ -10,6 +10,7 @@ class gradient_ascent:
         self.lambda_value = lambda_value
         self.tags = tags
         self.vector_v = self.vector_v_init()
+        self.feature_index = 0
         self.feature_maker = featureMaker.feature_maker("###")
 
     def vector_v_init(self):
@@ -51,7 +52,39 @@ class gradient_ascent:
                     total_sum += (log_of_numerator - log_of_denomenator)
 
             regularization = self.lambda_value*0.5*self.vector_multiplication(self.vector_v,self.vector_v)
-            return (total_sum-regularization)
+            return (-total_sum+regularization)
         return regularized_log_likelihood
 
+    def gradient_of_log_likelihood_function_by_vj(self):
+        def gradient_calculator(reverese_param_index,param_index,sentences):
+            total_sum = 0
+            if self.feature_index > len(param_index):
+                self.feature_index = 0
+            feature_counter = param_index[reverese_param_index[self.feature_index]][1]
+            feature = reverese_param_index[self.feature_index]
+            feature_components = feature.split(self.feature_maker.special_delimiter)
+            for tag in self.tags:
+                if (len(feature_components)>=3):
+                    new_feature = feature_components[0]+self.feature_maker.special_delimiter+tag+feature_components[2:]
+                else:
+                    new_feature = feature_components[0]+self.feature_maker.special_delimiter+tag
+                new_feature_counter = param_index[new_feature][1]
+                new_feature_index = param_index[new_feature][0]
+                total_sum += new_feature_counter*self.probability_calculation(new_feature_index,new_feature,param_index)
+            return self.lambda_value*self.vector_v[self.feature_index]- total_sum - feature_counter
 
+    def probability_calculation(self,index_of_feature,feature,param_index):
+        numerator = np.exp(self.vector_multiplication(self.vector_v[index_of_feature]))
+        denominator = 0
+        feature_components = feature.split(self.feature_maker.special_delimiter)
+        for tag in self.tags:
+            if len(feature_components) >= 3:
+                new_feature = feature_components[0] + self.feature_maker.special_delimiter + tag + feature_components[
+                                                                                                   2:]
+            else:
+                new_feature = feature_components[0] + self.feature_maker.special_delimiter + tag
+            new_feature_vec = feature_vec = bsr_matrix((1, self.number_of_dimensions)).toarray()
+            new_feature_index = param_index[new_feature]
+            new_feature_vec[new_feature_index]=1
+            denominator += np.exp(self.vector_multiplication(self.vector_v,new_feature_vec))
+        return float(float(numerator)/denominator)
