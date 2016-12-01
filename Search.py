@@ -6,9 +6,14 @@ class searcher:
         self.tags = set_of_tags
         return None
 
-    def viterbi_run(self, sentence_as_list_of_pure_words):
+    def viterbi_run(self, sentence_as_list_of_pure_words, sentence_as_tags):
         #skeleton for Viterbi algorithm
         number_of_iterations = len(sentence_as_list_of_pure_words)
-        
+        return None
+
+    def calculate_transition_probabilities(self):
+        return None
+
+    def calculate_exposition_probabilities(self):
         return None
 
