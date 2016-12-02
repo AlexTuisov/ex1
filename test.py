@@ -3,11 +3,14 @@ import Preprocessing
 import datetime as d
 import  GradientAscent as g
 if __name__ == '__main__':
-    unigrams = Preprocessing.get_ngrams(1)
-    bigrams = Preprocessing.get_ngrams(2)
-    trigrams = Preprocessing.get_ngrams(3)
+    unigrams ,w= Preprocessing.get_ngrams(1)
+    bigrams ,w= Preprocessing.get_ngrams(2)
+    trigrams, words = Preprocessing.get_ngrams(3)
     ftest = featureMaker.feature_maker("###")
     index_number, paramsIndex,reverese = ftest.getFeatureParamsFromIndex(unigrams,bigrams,trigrams)
+    tags = Preprocessing.preprocessing()
+    gradient_ascent = g.gradient_ascent(index_number, 10, tags)
+    gradient_ascent.gradient_ascent(words,trigrams,paramsIndex,reverese)
     """print(index_number)
     x = g.gradient_ascent(100000,10,())
     a=x.vector_v_init()

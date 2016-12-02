@@ -9,8 +9,8 @@ class feature_maker:
         paramsIndex = {}
         reverese_param_index = {}
         index_number = 0
-        for index in unigrams[0]:
-            sentence = unigrams[0][index]
+        for index in unigrams:
+            sentence = unigrams[index]
             for word in sentence:
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0])
                 if not paramsIndex.get(word_with_tag,False):
@@ -19,8 +19,8 @@ class feature_maker:
                     index_number += 1
                 else:
                     paramsIndex[word_with_tag][1] += 1
-        for index in bigrams[0]:
-            sentence = bigrams[0][index]
+        for index in bigrams:
+            sentence = bigrams[index]
             for word in sentence:
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0])+self.special_delimiter+str(sentence[word][0][1])
                 if not paramsIndex.get(word_with_tag,False):
@@ -29,8 +29,8 @@ class feature_maker:
                     index_number += 1
                 else:
                     paramsIndex[word_with_tag][1] += 1
-        for index in trigrams[0]:
-            sentence = trigrams[0][index]
+        for index in trigrams:
+            sentence = trigrams[index]
             for word in sentence:
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0])+self.special_delimiter+str(sentence[word][0][1])+self.special_delimiter+str(sentence[word][0][2])#TODO : make more generic
                 if not paramsIndex.get(word_with_tag,False):
