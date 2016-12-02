@@ -63,18 +63,20 @@ class feature_maker:
         return feature_vec"""
 
 
-    def create_sparse_vector_of_features(self,current_tag,previous_tag,last_tag,sentence,index,param_index,number_of_params):
+    def create_sparse_vector_of_features(self,current_tag,previous_tag,last_tag,word,param_index,number_of_params):
         feature_vec = bsr_matrix((1, number_of_params)).toarray()
-        word = sentence[index]
         unigram = word+self.special_delimiter+current_tag
         bigram = unigram+self.special_delimiter+previous_tag
         trigram = bigram+self.special_delimiter+last_tag
-        unigram_index = param_index[unigram]
-        feature_vec[unigram_index] = 1
-        bigram_index=param_index[bigram]
-        feature_vec[bigram_index] = 1
-        trigram_index = param_index[trigram]
-        feature_vec[trigram_index] = 1
+        if param_index.get(unigram,False):
+            unigram_index = param_index[unigram][0]
+            feature_vec[0][unigram_index] = 1
+        if param_index.get(bigram,False):
+            bigram_index=param_index[bigram][0]
+            feature_vec[0][bigram_index] = 1
+        if param_index.get(trigram,False):
+            trigram_index = param_index[trigram][0]
+            feature_vec[0][trigram_index] = 1
         return feature_vec
 
 
