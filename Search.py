@@ -1,7 +1,7 @@
 #File that contains search algorithms once the model has been learned
 import numpy as np
 
-class searcher:
+class Searcher:
     def __init__(self, tags, vector_v):
         #tags should be a tuple instead of set
         self.tags = tuple(tags)
@@ -9,7 +9,16 @@ class searcher:
         self.exposition_probabilities = self.calculate_exposition_probabilities()
         return None
 
-    def viterbi_run(self, sentence_as_list_of_pure_words):
+    def viterbi_full_run(self, pure_test_set, test_set_with_true_tags):
+        tagged_test_set = []
+        for sentence in pure_test_set:
+            tags = self.viterbi_run_per_sentence(sentence)
+            tagged_sentence = self.combine_words_with_tags(sentence, tags)
+            tagged_test_set.append(tagged_sentence)
+        return self.check_outcome(tagged_test_set, test_set_with_true_tags)
+
+
+    def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words):
         length_of_sentence = len(sentence_as_list_of_pure_words)
         previous_pi_value_table = np.ones((len(self.tags), len(self.tags)))
         #first step
@@ -26,8 +35,7 @@ class searcher:
         for index_of_u, u in enumerate(self.tags):
             for index_of_v, v in enumerate(self.tags):
                 current_pi_value_table[index_of_u][index_of_v] = (previous_pi_value_table[index_of_u][index_of_v]
-                                                                    * self.transition_probabilities[("stop", u, v)])
-        last_tag_value = max(current_pi_value_table.flat)
+                                                                    * self.transition_probabilities[("finish", u, v)])
         last_tags = np.unravel_index(current_pi_value_table.argmax(), current_pi_value_table.shape)
         sentence_as_tags = self.extract_backpointers(table_of_backpointers, last_tags, length_of_sentence)
         return sentence_as_tags
@@ -61,3 +69,8 @@ class searcher:
     def calculate_exposition_probabilities(self):
         return None
 
+def combine_words_with_tags(sentence, tags):
+    return None
+
+def check_outcome(tagged_set, true_tagged_set):
+    return None
