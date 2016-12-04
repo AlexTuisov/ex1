@@ -74,3 +74,5 @@ def combine_words_with_tags(sentence, tags):
 
 def check_outcome(tagged_set, true_tagged_set):
     return None
+
+#def unit_test_for_viterbi
