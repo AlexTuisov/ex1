@@ -2,20 +2,18 @@
 import numpy as np
 
 class Searcher:
-    def __init__(self, tags, vector_v):
+    def __init__(self, tags, gradient_descent):
         #tags should be a tuple instead of set
         self.tags = tuple(tags)
-        self.transition_probabilities = self.calculate_transition_probabilities()
-        self.exposition_probabilities = self.calculate_exposition_probabilities()
-        return None
+        self.gradient_descent = gradient_descent
 
     def viterbi_full_run(self, pure_test_set, test_set_with_true_tags):
         tagged_test_set = []
         for sentence in pure_test_set:
             tags = self.viterbi_run_per_sentence(sentence)
-            tagged_sentence = self.combine_words_with_tags(sentence, tags)
+            tagged_sentence = combine_words_with_tags(sentence, tags)
             tagged_test_set.append(tagged_sentence)
-        return self.check_outcome(tagged_test_set, test_set_with_true_tags)
+        return check_outcome(tagged_test_set, test_set_with_true_tags)
 
 
     def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words):
@@ -24,6 +22,7 @@ class Searcher:
         #first step
         table_of_backpointers = np.empty((length_of_sentence, len(self.tags), len(self.tags)))
         #the iterations
+        current_pi_value_table = np.empty((len(self.tags), len(self.tags)))
         for k in range(1, length_of_sentence):
             current_pi_value_table = np.empty((len(self.tags), len(self.tags)))
             for index_of_u, u in enumerate(self.tags):
@@ -35,7 +34,7 @@ class Searcher:
         for index_of_u, u in enumerate(self.tags):
             for index_of_v, v in enumerate(self.tags):
                 current_pi_value_table[index_of_u][index_of_v] = (previous_pi_value_table[index_of_u][index_of_v]
-                                                                    * self.transition_probabilities[("finish", u, v)])
+                                                                    + self.log_transition_probabilities(("@@@", u, v, "finish")))
         last_tags = np.unravel_index(current_pi_value_table.argmax(), current_pi_value_table.shape)
         sentence_as_tags = self.extract_backpointers(table_of_backpointers, last_tags, length_of_sentence)
         return sentence_as_tags
@@ -43,12 +42,10 @@ class Searcher:
     def calculate_pi_value_and_backpointer(self, k, u, v, previous_pi_value_column, word):
         pi_values = {}
         if k==1:
-            pi_values[(self.transition_probabilities[(v, "start", u)]
-                                                       *self.exposition_probabilities[(word, v)])] = "start"
+            pi_values[(self.log_transition_probabilities((v, u, "start", word)))] = "start"
         else:
-            for index_of_w, w in enumerate(self.tags):
-                pi_values[(previous_pi_value_column[index_of_w]*self.transition_probabilities[(v, w, u)]
-                                                           *self.exposition_probabilities[(word, v)])] = w
+            for index_of_t, t in enumerate(self.tags):
+                pi_values[(previous_pi_value_column[index_of_t]+self.log_transition_probabilities((v, u, t, word)))] = t
         best_value = max(list(pi_values.keys()))
         return best_value, pi_values[best_value]
 
@@ -63,16 +60,13 @@ class Searcher:
             tag_before_last = last_tag
         return sentence_as_tags.reverse()
 
-    def calculate_transition_probabilities(self):
-        return None
-
-    def calculate_exposition_probabilities(self):
+    def log_transition_probabilities(self, self_tag, previous_tag, last_tag, word):
+        #will talk to Greg's function and calculate log
         return None
 
 def combine_words_with_tags(sentence, tags):
-    return None
+    return 1
 
 def check_outcome(tagged_set, true_tagged_set):
-    return None
+    return 1
 
-#def unit_test_for_viterbi
