@@ -115,13 +115,16 @@ def get_ngrams(n):
             for index, word in enumerate(words):
                 if (index < 2) or (index > len(words) - 2):
                     continue
-                feature = []
+                tag_feature = []
+                word_feature = []
                 for i in range(0, n):
                     if (index - i) >= 0:
-                        feature.append(tags[index - i])
+                        tag_feature.append(tags[index - i])
+                        word_feature.append(words[index-i])
                     else:
-                        feature.append("start")
-                feature = tuple(feature)
+                        tag_feature.append("start")
+                        word_feature.append("*")
+                feature = (tuple(tag_feature), tuple(word_feature[1:]))
                 if word not in ngrams_as_dictionary[num_of_sentence].keys():
                     ngrams_as_dictionary[num_of_sentence][word] = [feature, ]
                 else:

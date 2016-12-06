@@ -12,23 +12,23 @@ def vector_multiplication(vector_a, vector_b):
     return np.dot(vector_a, vector_b.transpose())
 
 class gradient_ascent: #TODO: handle non seen tags!!!!!
-    def __init__(self,number_of_dimensions,lambda_value,tags):
+    def __init__(self,number_of_dimensions,lambda_value,tags,feature_matrix):
         self.number_of_dimensions=number_of_dimensions
         self.lambda_value = lambda_value
         self.tags = tags
         self.vector_v = self.vector_v_init()
         self.feature_index = 0
         self.feature_maker = featureMaker.feature_maker("###")
+        self.feature_matrix = feature_matrix
+        self.sum_of_feature_vector = self.sum_of_feature_vector_init(feature_matrix)
+
+
+    def sum_of_feature_vector_init(self,feature_matrix):
+        return self.feature_maker.sum_of_feature_vector(feature_matrix)
 
     def vector_v_init(self):
         vector_v = bsr_matrix((1, self.number_of_dimensions)).toarray()
         return vector_v
-
-    """def process_calc(self,tag,previous_tag,third_tag,word,param_index):
-        feature_vec = self.feature_maker.create_sparse_vector_of_features(tag, previous_tag, third_tag, word,
-                                                                          param_index, self.number_of_dimensions)
-        inner_product = vector_multiplication(self.vector_v, feature_vec)
-        return np.exp(inner_product)"""
 
     def log_of_denominator(self,previous_tag,third_tag,word,param_index):
         total_sum = 0
@@ -38,11 +38,18 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
             total_sum+=np.exp(inner_product)
         return np.log(total_sum)
 
-    def log_of_numerator(self,tag, previous_tag, third_tag, word,param_index):
+    """def log_of_numerator(self,tag, previous_tag, third_tag, word,param_index):
         feature_vec = self.feature_maker.create_sparse_vector_of_features(tag, previous_tag, third_tag, word,
                                                                           param_index, self.number_of_dimensions)
         inner_product = vector_multiplication(self.vector_v, feature_vec)
-        return inner_product
+        return inner_product"""
+
+
+    def log_of_numerator(self):
+        sum_of_numerator = 0
+        for row in range(self.feature_maker.number_of_sentences):
+            sum_of_numerator+=vector_multiplication(self.vector_v,self.feature_matrix[row])
+        return sum_of_numerator
 
 
     def regularized_log_likelihood(self,sentences,trigrams,param_index):
