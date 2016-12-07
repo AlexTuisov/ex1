@@ -52,6 +52,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         return sum_of_numerator
 
 
+
     def regularized_log_likelihood(self,sentences,trigrams,param_index):
         total_sum = 0
         for index in sentences:
@@ -66,24 +67,13 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         regularization = self.lambda_value*0.5*vector_multiplication(self.vector_v,self.vector_v)
         return (-total_sum+regularization)
 
-    def gradient_of_log_likelihood_function_by_vj(self,reverese_param_index,param_index):
-
+    def gradient_of_log_likelihood_function_by_vj(self,reverese_param_index):
         total_sum = 0
-        if self.feature_index > len(param_index):
-            self.feature_index = 0
-        feature_counter = param_index[reverese_param_index[self.feature_index]][1]
-        feature = reverese_param_index[self.feature_index]
-        feature_components = feature.split(self.feature_maker.special_delimiter)
-        for tag in self.tags:
-            if (len(feature_components) >= 3):
-                new_feature = feature_components[0]+self.feature_maker.special_delimiter+tag+feature_components[2:]
-            else:
-                new_feature = feature_components[0]+self.feature_maker.special_delimiter+tag
-            if param_index.get(new_feature,False):
-                new_feature_counter = param_index[new_feature][1]
-                new_feature_index = param_index[new_feature][0]
-                total_sum += new_feature_counter*self.probability_calculation(new_feature_index,new_feature,param_index)
-        return self.lambda_value*self.vector_v[self.feature_index]- total_sum - feature_counter
+        index = self.feature_maker.feature_indexes_list[1]
+        while (index <= len(reverese_param_index)-1):
+            trigram  = reverese_param_index[index]
+            trigram_data = self.feature_maker.param_index[trigram]
+
 
     def probability_calculation(self,index_of_feature,feature,param_index):
         if param_index.get(index_of_feature , False):
@@ -108,3 +98,22 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
 
     def gradient_ascent(self,sentences,trigram,param_index,reverese_param_index):
         fmin_l_bfgs_b(self.regularized_log_likelihood(sentences,trigram,param_index), self.vector_v, fprime=self.gradient_of_log_likelihood_function_by_vj(reverese_param_index,param_index), factr=1000000000.0,maxiter=2)
+
+
+"""    def gradient_of_log_likelihood_function_by_vj(self,reverese_param_index,param_index):
+        total_sum = 0
+        if self.feature_index > len(param_index):
+            self.feature_index = 0
+        feature_counter = param_index[reverese_param_index[self.feature_index]][1]
+        feature = reverese_param_index[self.feature_index]
+        feature_components = feature.split(self.feature_maker.special_delimiter)
+        for tag in self.tags:
+            if (len(feature_components) >= 3):
+                new_feature = feature_components[0]+self.feature_maker.special_delimiter+tag+feature_components[2:]
+            else:
+                new_feature = feature_components[0]+self.feature_maker.special_delimiter+tag
+            if param_index.get(new_feature,False):
+                new_feature_counter = param_index[new_feature][1]
+                new_feature_index = param_index[new_feature][0]
+                total_sum += new_feature_counter*self.probability_calculation(new_feature_index,new_feature,param_index)
+        return self.lambda_value*self.vector_v[self.feature_index]- total_sum - feature_counter"""
