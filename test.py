@@ -9,7 +9,7 @@ if __name__ == '__main__':
     fart = featureMaker.feature_maker("###",2)
     fart.init_all_params(unigrams,bigrams,trigrams)
     gay = g.gradient_ascent(fart.number_of_dimensions,10,fart)
-
+    gay.gradient_ascent()
 
     """print(index_number)
     x = g.gradient_ascent(100000,10,())

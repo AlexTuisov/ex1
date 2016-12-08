@@ -21,7 +21,7 @@ class feature_maker:
         self.expected_feature_matrix_index = 0
 
     def create_feature_matrix(self):
-        feature_matrix = lil_matrix((self.number_of_sentences,self.number_of_dimensions),dtype=int)
+        feature_matrix = lil_matrix((self.number_of_sentences,self.number_of_dimensions))
         for feature in self.param_index:
             sentences_index =self.param_index[feature][2]
             for index in sentences_index:
@@ -30,9 +30,9 @@ class feature_maker:
 
 
     def sum_of_feature_vector(self):
-        sum_of_feature_vector = csr_matrix((1, self.number_of_dimensions),dtype=int).toarray()
+        sum_of_feature_vector = csr_matrix((1, self.number_of_dimensions))
         for row in range(self.number_of_sentences):
-            sum_of_feature_vector += self.feature_matrix.getrow(row).toarray()
+            sum_of_feature_vector += self.feature_matrix.getrow(row)
         return sum_of_feature_vector
 
     def get_index_of_k_most_seen_tags(self):
@@ -71,7 +71,7 @@ class feature_maker:
                     if self.k_most_seen_tags.get(words[1],False):
                         lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
                         expected_matrix_rows_number *= len(self.k_most_seen_tags[words[1]])
-                    expected_matrix_per_tag = lil_matrix((expected_matrix_rows_number,self.number_of_dimensions),dtype=int)
+                    expected_matrix_per_tag = lil_matrix((expected_matrix_rows_number,self.number_of_dimensions))
                     current_index = 0
                     for element in itertools.product(*lists_of_k_most_seen_tags):
                         expected_matrix_per_tag = self.modify_expected_matrix(element[0],element[1],element[2],current_word,expected_matrix_per_tag,current_index)
@@ -172,13 +172,13 @@ class feature_maker:
         trigram = bigram+self.special_delimiter+last_tag
         if self.param_index.get(unigram,False):
             unigram_index = self.param_index[unigram][0]
-            expected_feature_matrix[current_index, unigram_index] = self.param_index[unigram][1]
+            expected_feature_matrix[current_index, unigram_index] = 1 #self.param_index[unigram][1]
         if self.param_index.get(bigram,False):
             bigram_index = self.param_index[bigram][0]
-            expected_feature_matrix[current_index,bigram_index] = self.param_index[bigram][1]
+            expected_feature_matrix[current_index,bigram_index] = 1 #self.param_index[bigram][1]
         if self.param_index.get(trigram,False):
             trigram_index = self.param_index[trigram][0]
-            expected_feature_matrix[current_index,trigram_index] = self.param_index[trigram][1]
+            expected_feature_matrix[current_index,trigram_index] = 1 #self.param_index[trigram][1]
         return expected_feature_matrix
 
 
