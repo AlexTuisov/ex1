@@ -18,6 +18,7 @@ class feature_maker:
         self.k_most_seen_tags = {}
         self.k = k
         self.feature_matrix=0
+        self.expected_feature_matrix_index = 0
 
     def create_feature_matrix(self):
         feature_matrix = csr_matrix((self.number_of_sentences,self.number_of_dimensions),dtype=int).toarray()
@@ -25,14 +26,14 @@ class feature_maker:
             sentences_index =self.param_index[feature][2]
             for index in sentences_index:
                 feature_matrix[index][self.param_index[feature][0]] = 1
-        return feature_matrix
+        self.feature_matrix = feature_matrix
 
 
-    def sum_of_feature_vector(self,feature_matrix):
+    def sum_of_feature_vector(self):
         sum_of_feature_vector = csr_matrix(1, self.number_of_dimensions)
-        row_number = feature_matrix.shape()[0]
+        row_number = self.feature_matrix.shape()[0]
         for row in range(row_number):
-            sum_of_feature_vector + feature_matrix[row]
+            sum_of_feature_vector += self.feature_matrix.getrow(row).torray
         return sum_of_feature_vector
 
     def get_index_of_k_most_seen_tags(self):
@@ -49,54 +50,36 @@ class feature_maker:
                 tag_index+=1
         self.k_most_seen_tags = k_most_seen_tags
 
-    def create_expected_matrix(self):
-        print("expected matrix init")
-        rows_count = 1
-        current_index = 0
+    def create_expected_matrix_index(self):
+        print("expected matrix index init")
+        trigram_index_of_matries ={}
         index =0
-        stemmer = es()
         while (index <= self.number_of_dimensions-1):
             feature = self.reverse_param_index[index]
             if len(feature.split(self.special_delimiter)) > 3:
                 trigram_data = self.param_index[feature]
                 current_word = feature.split(self.special_delimiter)[0]
                 for words in trigram_data[3]:
+                    trigram_tuple = (current_word,words[0],words[1],)
+                    expected_matrix_rows_number  =1
                     lists_of_k_most_seen_tags = []
                     if self.k_most_seen_tags.get(current_word,False):
                         lists_of_k_most_seen_tags.append(self.k_most_seen_tags[current_word])
+                        expected_matrix_rows_number *= len(self.k_most_seen_tags[current_word])
                     if self.k_most_seen_tags.get(words[0],False):
                         lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[0]])
+                        expected_matrix_rows_number *= len(self.k_most_seen_tags[words[0]])
                     if self.k_most_seen_tags.get(words[1],False):
                         lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
+                        expected_matrix_rows_number *= len(self.k_most_seen_tags[words[1]])
+                    expected_matrix_per_tag = lil_matrix((expected_matrix_rows_number,self.number_of_dimensions),dtype=int)
+                    current_index = 0
                     for element in itertools.product(*lists_of_k_most_seen_tags):
-                        rows_count += 1
-            index += 1
-        index = 0
-        print(rows_count)
-        expected_matrix = lil_matrix((rows_count,self.number_of_dimensions),dtype=int)
-        while (index <= self.number_of_dimensions-1):
-            feature = self.reverse_param_index[index]
-            if len(feature.split(self.special_delimiter))>3:
-                trigram_data = self.param_index[feature]
-                current_word = feature.split(self.special_delimiter)[0]
-                for words in trigram_data[3]:
-                    lists_of_k_most_seen_tags = []
-                    if self.k_most_seen_tags.get(current_word, False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[current_word])
-                    if self.k_most_seen_tags.get(words[0], False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[0]])
-                    else:
-                        print("0")
-
-                    if self.k_most_seen_tags.get(words[1], False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
-                    else:
-                        print("1")
-                    for element in itertools.product(*lists_of_k_most_seen_tags):
-                        self.modify_expected_matrix(element[0],element[1],element[2],current_word,expected_matrix,current_index)
+                        expected_matrix_per_tag = self.modify_expected_matrix(element[0],element[1],element[2],current_word,expected_matrix_per_tag,current_index)
                         current_index += 1
+                    trigram_index_of_matries[trigram_tuple]=csr_matrix(expected_matrix_per_tag)
             index += 1
-
+        self.expected_feature_matrix_index = trigram_index_of_matries
 
     def init_all_params(self,unigrams,bigrams,trigrams):
         print("param_index init")
@@ -105,6 +88,8 @@ class feature_maker:
         self.get_index_of_k_most_seen_tags()
         print("feature matrix init")
         self.create_feature_matrix()
+        self.expected_feature_matrix_index()
+
 
     def get_feature_params_from_index(self, unigrams, bigrams, trigrams):
         stemmer = es()
@@ -231,7 +216,50 @@ class feature_maker:
 
 
 
-
+"""    def create_expected_matrix(self):
+        print("expected matrix init")
+        rows_count = 1
+        current_index = 0
+        index =0
+        stemmer = es()
+        while (index <= self.number_of_dimensions-1):
+            feature = self.reverse_param_index[index]
+            if len(feature.split(self.special_delimiter)) > 3:
+                trigram_data = self.param_index[feature]
+                current_word = feature.split(self.special_delimiter)[0]
+                for words in trigram_data[3]:
+                    lists_of_k_most_seen_tags = []
+                    if self.k_most_seen_tags.get(current_word,False):
+                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[current_word])
+                    if self.k_most_seen_tags.get(words[0],False):
+                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[0]])
+                    if self.k_most_seen_tags.get(words[1],False):
+                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
+                    for element in itertools.product(*lists_of_k_most_seen_tags):
+                        rows_count += 1
+            index += 1
+        index = 0
+        print(rows_count)
+        expected_matrix = lil_matrix((rows_count,self.number_of_dimensions),dtype=int)
+        while (index <= self.number_of_dimensions-1):
+            feature = self.reverse_param_index[index]
+            if len(feature.split(self.special_delimiter))>3:
+                trigram_data = self.param_index[feature]
+                current_word = feature.split(self.special_delimiter)[0]
+                for words in trigram_data[3]:
+                    lists_of_k_most_seen_tags = []
+                    if self.k_most_seen_tags.get(current_word, False):
+                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[current_word])
+                    if self.k_most_seen_tags.get(words[0], False):
+                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[0]])
+                    if self.k_most_seen_tags.get(words[1], False):
+                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
+                    for element in itertools.product(*lists_of_k_most_seen_tags):
+                        self.modify_expected_matrix(element[0],element[1],element[2],current_word,expected_matrix,current_index)
+                        current_index += 1
+            index += 1
+        self.expected_feature_matrix = csr_matrix(expected_matrix)
+"""
 
 
 
