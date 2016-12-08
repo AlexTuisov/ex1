@@ -8,7 +8,8 @@ if __name__ == '__main__':
     trigrams, words = Preprocessing.get_ngrams(3)
     fart = featureMaker.feature_maker("###",2)
     fart.init_all_params(unigrams,bigrams,trigrams)
-    gay = g(fart.number_of_dimensions,10,fart)
+    gay = g.gradient_ascent(fart.number_of_dimensions,10,fart)
+
 
     """print(index_number)
     x = g.gradient_ascent(100000,10,())

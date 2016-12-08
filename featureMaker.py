@@ -21,19 +21,18 @@ class feature_maker:
         self.expected_feature_matrix_index = 0
 
     def create_feature_matrix(self):
-        feature_matrix = csr_matrix((self.number_of_sentences,self.number_of_dimensions),dtype=int).toarray()
+        feature_matrix = lil_matrix((self.number_of_sentences,self.number_of_dimensions),dtype=int)
         for feature in self.param_index:
             sentences_index =self.param_index[feature][2]
             for index in sentences_index:
-                feature_matrix[index][self.param_index[feature][0]] = 1
-        self.feature_matrix = feature_matrix
+                feature_matrix[index,self.param_index[feature][0]] = 1
+        self.feature_matrix = csr_matrix(feature_matrix)
 
 
     def sum_of_feature_vector(self):
-        sum_of_feature_vector = csr_matrix(1, self.number_of_dimensions)
-        row_number = self.feature_matrix.shape()[0]
-        for row in range(row_number):
-            sum_of_feature_vector += self.feature_matrix.getrow(row).torray
+        sum_of_feature_vector = csr_matrix((1, self.number_of_dimensions),dtype=int).toarray()
+        for row in range(self.number_of_sentences):
+            sum_of_feature_vector += self.feature_matrix.getrow(row).toarray()
         return sum_of_feature_vector
 
     def get_index_of_k_most_seen_tags(self):
@@ -88,7 +87,7 @@ class feature_maker:
         self.get_index_of_k_most_seen_tags()
         print("feature matrix init")
         self.create_feature_matrix()
-        self.expected_feature_matrix_index()
+        self.create_expected_matrix_index()
 
 
     def get_feature_params_from_index(self, unigrams, bigrams, trigrams):

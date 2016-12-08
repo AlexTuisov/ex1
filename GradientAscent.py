@@ -72,7 +72,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         return float(float(numerator)/sum_of_exp_prem)
 
 
-    def gradient_ascent(self,sentences,trigram,param_index,reverese_param_index):
+    def gradient_ascent(self):
         fmin_l_bfgs_b(self.regularized_log_likelihood(),self.vector_v,self.gradient_of_log_likelihood())
 
 
