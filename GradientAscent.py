@@ -45,16 +45,14 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
     def sum_of_exponential_permutations(self,matrix,vector_v):
         """for row in range(matrix.get_shape()[0]):
             feature_sum += np.exp(vector_multiplication(self.vector_v, matrix.getrow(row).toarray()))"""
-        initial=matrix.dot(vector_v).transpose()
-        print(type(initial))
+        initial=matrix.dot(vector_v)
         initial=np.exp(initial)
         return initial.sum()
 
 
 
     def regularized_log_likelihood(self,vector_v):
-        t = vector_v
-        res = self.log_of_denominator(t)-self.log_of_numerator(t)+5*np.dot(t,t)
+        res = self.log_of_denominator(vector_v)-self.log_of_numerator(vector_v)+5*np.dot(vector_v,vector_v)
         return res
 
 
@@ -67,7 +65,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
                 feature = matrix.getrow(row)
                 expected_feature = feature.multiply(self.probability_calculation(feature,sum_of_exponentias,vector_v))
                 expected_sum+=expected_feature
-        res = (expected_sum - self.sum_of_feature_vector + csr_matrix(vector_v).multiply(self.lambda_value)).toarray()
+        res = (-expected_sum + self.sum_of_feature_vector - csr_matrix(vector_v).multiply(self.lambda_value)).toarray()
         return res.transpose()
 
 
