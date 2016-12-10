@@ -18,7 +18,6 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         self.feature_index = 0
         self.feature_maker = feature_maker
         self.sum_of_feature_vector = self.feature_maker.sum_of_feature_vector()
-        print(self.sum_of_feature_vector)
         self.trigram_histogram =trigram_histogram
 
 
@@ -37,13 +36,11 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         total_sum = 0
         for trigram in self.feature_maker.expected_feature_matrix_index:
             matrix = self.feature_maker.expected_feature_matrix_index[trigram]
-            total_sum+=self.trigram_histogram[trigram]*np.log(self.sum_of_exponential_permutations(matrix,vector_v))
+            total_sum+=self.feature_maker.param_index[trigram][1]*np.log(self.sum_of_exponential_permutations(matrix,vector_v))
         return total_sum
 
 
     def sum_of_exponential_permutations(self,matrix,vector_v):
-        """for row in range(matrix.get_shape()[0]):
-            feature_sum += np.exp(vector_multiplication(self.vector_v, matrix.getrow(row).toarray()))"""
         initial=matrix.dot(vector_v)
         initial=np.exp(initial)
         return initial.sum()
@@ -51,22 +48,21 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
 
 
     def regularized_log_likelihood(self,vector_v):
-        res = self.log_of_denominator(vector_v)-self.log_of_numerator(vector_v)#+0.5*np.dot(vector_v,vector_v)
+        res = self.log_of_denominator(vector_v)-self.log_of_numerator(vector_v)+5*np.dot(vector_v,vector_v)
         print(res)
         return res
 
 
     def gradient_of_log_likelihood(self,vector_v):
+        expected_sum = csr_matrix((1, self.number_of_dimensions))
         for trigram in self.feature_maker.expected_feature_matrix_index:
             matrix = self.feature_maker.expected_feature_matrix_index[trigram]
             sum_of_exponentias = self.sum_of_exponential_permutations(matrix,vector_v)
-            expected_sum = csr_matrix((1,self.number_of_dimensions))
             for row in range(matrix.get_shape()[0]):
                 feature = matrix.getrow(row)
                 expected_feature = feature.multiply(self.probability_calculation(feature,sum_of_exponentias,vector_v))
-                expected_sum+=self.trigram_histogram[trigram]*expected_feature
-        res = (-expected_sum + self.sum_of_feature_vector).toarray()#- csr_matrix(vector_v).multiply(1)).toarray()
-        print(res)
+                expected_sum+=expected_feature.multiply(self.feature_maker.param_index[trigram][1])
+        res = (expected_sum - self.sum_of_feature_vector + csr_matrix(vector_v).multiply(self.lambda_value)).toarray()
         return res.transpose()
 
 
@@ -78,7 +74,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
     def gradient_ascent(self):
         print("starting gradient ascent")
         vector_v0 = np.ndarray((1,self.number_of_dimensions))
-        vector_v0.fill(1)
+        vector_v0.fill(0)
         return fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,self.gradient_of_log_likelihood)
 
 
