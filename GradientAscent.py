@@ -5,12 +5,12 @@ from scipy.optimize import fmin_l_bfgs_b
 import featureMaker
 from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
-
+import random
 def vector_multiplication(vector_a, vector_b):
     return csr_matrix.dot(vector_a, vector_b)
 
 class gradient_ascent: #TODO: handle non seen tags!!!!!
-    def __init__(self,number_of_dimensions,lambda_value,feature_maker):
+    def __init__(self,number_of_dimensions,lambda_value,feature_maker,trigram_histogram):
         self.number_of_dimensions=number_of_dimensions
         self.lambda_value = lambda_value
         #self.tags = tags
@@ -18,7 +18,8 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         self.feature_index = 0
         self.feature_maker = feature_maker
         self.sum_of_feature_vector = self.feature_maker.sum_of_feature_vector()
-
+        print(self.sum_of_feature_vector)
+        self.trigram_histogram =trigram_histogram
 
 
 
@@ -30,15 +31,13 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
     def log_of_numerator(self,vector_v):
         vector = self.feature_maker.feature_matrix.dot(vector_v)
         res = vector.sum()
-        print("numer=",res)
         return res
 
     def log_of_denominator(self,vector_v):
         total_sum = 0
         for trigram in self.feature_maker.expected_feature_matrix_index:
             matrix = self.feature_maker.expected_feature_matrix_index[trigram]
-            total_sum+=np.log(self.sum_of_exponential_permutations(matrix,vector_v))
-        print("denom=",total_sum)
+            total_sum+=self.trigram_histogram[trigram]*np.log(self.sum_of_exponential_permutations(matrix,vector_v))
         return total_sum
 
 
@@ -52,7 +51,8 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
 
 
     def regularized_log_likelihood(self,vector_v):
-        res = self.log_of_denominator(vector_v)-self.log_of_numerator(vector_v)+5*np.dot(vector_v,vector_v)
+        res = self.log_of_denominator(vector_v)-self.log_of_numerator(vector_v)#+0.5*np.dot(vector_v,vector_v)
+        print(res)
         return res
 
 
@@ -64,12 +64,13 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
             for row in range(matrix.get_shape()[0]):
                 feature = matrix.getrow(row)
                 expected_feature = feature.multiply(self.probability_calculation(feature,sum_of_exponentias,vector_v))
-                expected_sum+=expected_feature
-        res = (-expected_sum + self.sum_of_feature_vector - csr_matrix(vector_v).multiply(self.lambda_value)).toarray()
+                expected_sum+=self.trigram_histogram[trigram]*expected_feature
+        res = (-expected_sum + self.sum_of_feature_vector).toarray()#- csr_matrix(vector_v).multiply(1)).toarray()
+        print(res)
         return res.transpose()
 
 
-    def probability_calculation(self,feature,sum_of_exp_prem,vector_v):#TODO : handle non seen words
+    def probability_calculation(self,feature,sum_of_exp_prem,vector_v):#TODO : handle non seen wordsp
         numerator = np.exp(feature.dot(vector_v))
         return float(float(numerator)/sum_of_exp_prem)
 
@@ -77,8 +78,8 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
     def gradient_ascent(self):
         print("starting gradient ascent")
         vector_v0 = np.ndarray((1,self.number_of_dimensions))
-        vector_v0.fill(0)
-        return fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,fprime=self.gradient_of_log_likelihood)
+        vector_v0.fill(1)
+        return fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,self.gradient_of_log_likelihood)
 
 
 

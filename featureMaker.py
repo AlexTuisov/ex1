@@ -20,7 +20,7 @@ class feature_maker:
         self.feature_matrix=0
         self.expected_feature_matrix_index = 0
 
-    def create_feature_matrix(self):
+    def create_feature_matrix(self):#TODO : check if pruning mess up this func
         feature_matrix = lil_matrix((self.number_of_sentences,self.number_of_dimensions))
         for feature in self.param_index:
             sentences_index =self.param_index[feature][2]
@@ -31,7 +31,7 @@ class feature_maker:
 
     def sum_of_feature_vector(self):
         sum_of_feature_vector = csr_matrix((1, self.number_of_dimensions))
-        for row in range(self.number_of_sentences):
+        for row in range(self.feature_matrix.get_shape()[0]):
             sum_of_feature_vector += self.feature_matrix.getrow(row)
         return sum_of_feature_vector
 

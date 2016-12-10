@@ -153,4 +153,13 @@ def histogram_of_ngrams(n):
                     histogram_of_trigrams[word_feature] = 1
     return histogram_of_trigrams
 
+
+def longest_sentence():
+    with open(get_path_to_training_set()) as train:
+        longest = 0
+        for sentence in train:
+            if len(sentence.split()) > longest:
+                longest = len(sentence.split())
+    return longest
+
 #
