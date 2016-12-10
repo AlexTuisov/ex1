@@ -20,29 +20,30 @@ class Searcher:
             tagged_test_set.append(tagged_sentence)
         return check_outcome(tagged_test_set, test_set_with_true_tags)
 
-    def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words):
+    def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words_without_finish):
+        sentence_as_list_of_pure_words = list(sentence_as_list_of_pure_words_without_finish)
+        sentence_as_list_of_pure_words.append("finish")
+        sentence_as_list_of_pure_words.append("finish")
         length_of_sentence = len(sentence_as_list_of_pure_words)
         previous_pi_value_table = np.zeros((len(self.tags), len(self.tags)))
         previous_pi_value_table[self.tags["start"], self.tags["start"]] = 1
+        list_of_pi_tables = np.zeros((length_of_sentence, len(self.tags), len(self.tags)))
 
         # first step
-        table_of_backpointers = np.zeros((length_of_sentence+1, len(self.tags), len(self.tags)))
+        table_of_backpointers = np.zeros((length_of_sentence, len(self.tags), len(self.tags)))
 
         # the iterations
         current_pi_value_table = np.empty((len(self.tags), len(self.tags)))
-        for k in range(0, length_of_sentence):
+        for k in range(0, length_of_sentence-1):
             current_pi_value_table = np.empty((len(self.tags), len(self.tags)))
             for u in self.tags_as_tuple:
                 for v in self.tags_as_tuple:
                     current_pi_value_table[u][v], table_of_backpointers[k][u][v] = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k])
             previous_pi_value_table = deepcopy(current_pi_value_table)
+            list_of_pi_tables[k] = previous_pi_value_table
 
         # last step
-        for u in self.tags_as_tuple:
-            for v in self.tags_as_tuple:
-                current_pi_value_table[u][v] = (previous_pi_value_table[u][v]
-                                                                    + self.log_transition_probabilities(self.tags["@@@"], u, v, "finish"))
         last_tags = np.unravel_index(current_pi_value_table.argmax(), current_pi_value_table.shape)
         sentence_as_tags = self.extract_backpointers(table_of_backpointers, last_tags, length_of_sentence)
         return sentence_as_tags
@@ -72,14 +73,10 @@ class Searcher:
         prob = 0.1 + random.random()*0.05
         if word == "the" and self_tag == self.tags["DT"]:
             prob += 0.5
-        if word == "dog"  and self_tag == self.tags["NN"] and previous_tag == self.tags["DT"]:
+        if word == "dog" and self_tag == self.tags["NN"] and previous_tag == self.tags["DT"]:
             prob += 0.5
-        if word == "barks" and self_tag == self.tags["VB"] and last_tag == self.tags["DT"]:
+        if word == "barks" and self_tag == self.tags["VB"] and previous_tag == self.tags["NN"]:
             prob += 0.5
-        if word == "finish" and previous_tag == self.tags["NN"] and self_tag == self.tags["@@@"]:
-            prob += 0.6
-        if word == "finish" and last_tag == self.tags["NN"] and self_tag == self.tags["@@@"]:
-            prob += 0.2
         return np.log(prob)
 
 
