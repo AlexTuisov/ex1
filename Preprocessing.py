@@ -132,7 +132,25 @@ def get_ngrams(n):
             pure_sentences[num_of_sentence] = words[2:-2]
     return ngrams_as_dictionary, pure_sentences
 
-
-
+def histogram_of_ngrams(n):
+    histogram_of_trigrams = {}
+    with open(get_path_to_training_set()) as raw_train_set:
+        for num_of_sentence, sentence in enumerate(raw_train_set):
+            words, tags = prettifying_the_tagged_sentence(sentence)
+            for index, word in enumerate(words):
+                if (index < (n-1)) or (index > len(words) - (n-1)):
+                    continue
+                word_feature = []
+                for i in range(0, n):
+                    if (index - i) >= 0:
+                        word_feature.append(words[index - i])
+                    else:
+                        word_feature.append("*")
+                word_feature = tuple(word_feature)
+                if word_feature in histogram_of_trigrams.keys():
+                    histogram_of_trigrams[word_feature] += 1
+                else:
+                    histogram_of_trigrams[word_feature] = 1
+    return histogram_of_trigrams
 
 #
