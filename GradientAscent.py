@@ -78,8 +78,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         print("starting gradient ascent")
         vector_v0 = np.ndarray((1,self.number_of_dimensions))
         vector_v0.fill(0)
-        print(type(vector_v0))
-        return fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,fprime=self.gradient_of_log_likelihood,approx_grad=True)
+        return fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,fprime=self.gradient_of_log_likelihood)
 
 
 
