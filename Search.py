@@ -1,8 +1,12 @@
 # File that contains search algorithms once the model has been learned
 from copy import deepcopy
+
+from scipy.sparse import csr_matrix
+
 import GradientAscent
 import numpy as np
 import random
+import datetime as d
 
 
 class Searcher:
@@ -25,6 +29,7 @@ class Searcher:
         self.check_outcome(tagged_test_set, test_set_with_true_tags)
 
     def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words_without_finish):
+        start = d.datetime.now()
         sentence_as_list_of_pure_words = list(sentence_as_list_of_pure_words_without_finish) + ["finish", "finish"]
         length_of_sentence = len(sentence_as_list_of_pure_words)
 
@@ -40,14 +45,17 @@ class Searcher:
             current_pi_value_table = np.empty((len(self.tags), len(self.tags)))
             for u in self.tags_as_tuple:
                 for v in self.tags_as_tuple:
+                    start_inner = d.datetime.now()
                     current_pi_value_table[u][v], table_of_backpointers[k][u][v] = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k])
+                    print("one innermost iteration took: ", d.datetime.now() - start_inner)
             previous_pi_value_table = deepcopy(current_pi_value_table)
             list_of_pi_tables[k] = previous_pi_value_table
 
         # last step
         last_tags = np.unravel_index(current_pi_value_table.argmax(), current_pi_value_table.shape)
         sentence_as_tags = self.extract_backpointers(table_of_backpointers, last_tags, length_of_sentence)
+        print("one iteration took: ", d.datetime.now() - start)
         return sentence_as_tags
 
     def calculate_pi_value_and_backpointer(self, u, v, previous_pi_value_column, word):
@@ -72,13 +80,11 @@ class Searcher:
     def log_transition_probabilities(self, self_tag, last_tag, previous_tag, word):
         # implementation of formula from slides of tirgul 4
         current_feature_vector = self.get_feature_vector(self_tag, previous_tag, last_tag, word)
-        print("length of vector v: ", len(self.vector_v))
-        print(current_feature_vector.shape)
-        numerator = np.dot(self.vector_v, current_feature_vector)
+        numerator = csr_matrix.dot(self.vector_v, current_feature_vector.transpose())
         denominator = 0.0
         for tag in self.tags_as_tuple:
-            denominator += np.dot(self.vector_v, self.get_feature_vector(tag, previous_tag, last_tag, word))
-        return np.log(numerator/denominator)
+            denominator += csr_matrix.dot(self.vector_v, self.get_feature_vector(tag, previous_tag, last_tag, word).transpose())
+        return np.log(0.5)
 
     def get_feature_vector(self, tag, previous_tag, last_tag, word):
         local_feature_maker = self.gradient_descent.feature_maker
