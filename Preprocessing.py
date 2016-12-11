@@ -1,12 +1,13 @@
 #This file contains some scripts for pre-processing the data
 import os
+import random
 
 
 #first try, little bit of statistics on the input
 def preprocessing():
     train_set_as_dictionary = {}
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train.wtag")
+    absolute_path = os.path.join(path, "data/train2.wtag")
     count = 0
     tags = set([])
     with open(absolute_path) as raw_train_set:
@@ -57,54 +58,39 @@ def prettifying_the_tagged_sentence(sentence):
 
 def get_path_to_training_set():
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train.wtag")
+    absolute_path = os.path.join(path, "data/train2.wtag")
     return absolute_path
-"""
-def get_unigrams():
-    unigram_features_as_dictionary = {}
-    with open(get_path_to_training_set()) as raw_train_set:
-        for num_of_sentence, sentence in enumerate(raw_train_set):
-            train_set_as_strings = sentence.split()
-            unigram_features_as_dictionary[num_of_sentence] = {}
-            for tagged_word in train_set_as_strings:
-                try:
-                    word, tag = tagged_word.split('_')
-                except:
-                    continue
-                if word not in unigram_features_as_dictionary[num_of_sentence].keys():
-                    unigram_features_as_dictionary[num_of_sentence][word] = [tag, ]
-                else:
-                    unigram_features_as_dictionary[num_of_sentence][word].append(tag)
-    return unigram_features_as_dictionary
 
-def get_bigrams():
-    bigram_features_as_dictionary = {}
-    with open(get_path_to_training_set()) as raw_train_set:
-        for num_of_sentence, sentence in enumerate(raw_train_set):
-            words, tags = prettifying_the_tagged_sentence(sentence)
-            for index, word in enumerate(words):
-                if (index < 2) or (index > len(words) - 2):
-                    continue
-                if word not in bigram_features_as_dictionary.keys():
-                    bigram_features_as_dictionary[word] = [(tags[index], tags[index-1], num_of_sentence),]
-                else:
-                    bigram_features_as_dictionary[word].append((tags[index], tags[index-1], num_of_sentence),)
-    return bigram_features_as_dictionary
+def get_path_to_test_set():
+    path = os.path.dirname(__file__)
+    absolute_path = os.path.join(path, "data/test.wtag")
+    return absolute_path
 
-def get_trigrams():
-    trigram_features_as_dictionary = {}
-    with open(get_path_to_training_set()) as raw_train_set:
-        for num_of_sentence, sentence in enumerate(raw_train_set):
-            words, tags = prettifying_the_tagged_sentence(sentence)
-            for index, word in enumerate(words):
-                if (index < 2) or (index > len(words) - 2):
-                    continue
-                if word not in trigram_features_as_dictionary.keys():
-                    trigram_features_as_dictionary[word] = [(tags[index], tags[index-1], tags[index-2], num_of_sentence),]
-                else:
-                    trigram_features_as_dictionary[word].append((tags[index], tags[index-1], tags[index-2], num_of_sentence),)
-    return trigram_features_as_dictionary
-"""
+def create_little_test():
+    pure_test_set = []
+    tagged_little_test = []
+    with open(get_path_to_test_set()) as raw_test_set:
+        if random.random() < 0.002:
+            for sentence in raw_test_set:
+                tagged_little_test.append(sentence)
+                pure_sentence = []
+                for word in sentence.split():
+                    pure_word = word.split("_")[0]
+                    pure_sentence.append(pure_word)
+                pure_test_set.append(pure_sentence)
+    return pure_test_set, tagged_little_test
+
+def get_pure_test_set():
+    pure_test_set = []
+    with open(get_path_to_test_set()) as raw_test_set:
+        for sentence in raw_test_set:
+            pure_sentence = []
+            for word in sentence.split():
+                pure_word = word.split("_")[0]
+                pure_sentence.append(pure_word)
+            pure_test_set.append(pure_sentence)
+    return pure_test_set
+
 def get_ngrams(n):
     ngrams_as_dictionary = {}
     pure_sentences = {}
@@ -152,6 +138,9 @@ def histogram_of_ngrams(n):
                 else:
                     histogram_of_trigrams[word_feature] = 1
     return histogram_of_trigrams
+
+
+
 
 
 def longest_sentence():

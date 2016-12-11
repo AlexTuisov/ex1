@@ -1,35 +1,37 @@
 # File that contains search algorithms once the model has been learned
 from copy import deepcopy
-
+import GradientAscent
 import numpy as np
 import random
 
 
 class Searcher:
-    def __init__(self, tags, gradient_descent):
-        # tags should be a tuple instead of set
-        self.tags = tags
-        self.tags_as_tuple = tuple(sorted(list(tags.values())))
+    def __init__(self, tags, gradient_descent, vector_v):
+        self.tags = {tag: number+1 for number, tag in enumerate(tags)}
+        self.tags["start"] = 0
+        print(self.tags)
+        self.inverted_tags = {number: tag for tag, number in self.tags.items()}
+        self.tags_as_tuple = tuple(sorted(list(self.tags.values())))
         self.gradient_descent = gradient_descent
+        self.vector_v = vector_v
 
     def viterbi_full_run(self, pure_test_set, test_set_with_true_tags):
         tagged_test_set = []
         for sentence in pure_test_set:
-            tags = self.viterbi_run_per_sentence(sentence)
-            tagged_sentence = combine_words_with_tags(sentence, tags)
+            #sentence = unprocessed_sentence.split()
+            current_tag_sequence = self.viterbi_run_per_sentence(sentence)
+            tagged_sentence = self.combine_words_with_tags(sentence, current_tag_sequence)
             tagged_test_set.append(tagged_sentence)
-        return check_outcome(tagged_test_set, test_set_with_true_tags)
+        self.check_outcome(tagged_test_set, test_set_with_true_tags)
 
     def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words_without_finish):
-        sentence_as_list_of_pure_words = list(sentence_as_list_of_pure_words_without_finish)
-        sentence_as_list_of_pure_words.append("finish")
-        sentence_as_list_of_pure_words.append("finish")
+        sentence_as_list_of_pure_words = list(sentence_as_list_of_pure_words_without_finish) + ["finish", "finish"]
         length_of_sentence = len(sentence_as_list_of_pure_words)
+
+        # first step
         previous_pi_value_table = np.zeros((len(self.tags), len(self.tags)))
         previous_pi_value_table[self.tags["start"], self.tags["start"]] = 1
         list_of_pi_tables = np.zeros((length_of_sentence, len(self.tags), len(self.tags)))
-
-        # first step
         table_of_backpointers = np.zeros((length_of_sentence, len(self.tags), len(self.tags)))
 
         # the iterations
@@ -65,25 +67,43 @@ class Searcher:
             last_tag = int(new_tag)
             tag_before_last = int(last_tag)
         sentence_as_tags.reverse()
-        return sentence_as_tags
+        return sentence_as_tags[:-2]
 
     def log_transition_probabilities(self, self_tag, last_tag, previous_tag, word):
-        # will talk to Greg's function and calculate log
-        # stub
-        prob = 0.1 + random.random()*0.05
-        if word == "the" and self_tag == self.tags["DT"]:
-            prob += 0.5
-        if word == "dog" and self_tag == self.tags["NN"] and previous_tag == self.tags["DT"]:
-            prob += 0.5
-        if word == "barks" and self_tag == self.tags["VB"] and previous_tag == self.tags["NN"]:
-            prob += 0.5
-        return np.log(prob)
+        # implementation of formula from slides of tirgul 4
+        current_feature_vector = self.get_feature_vector(self_tag, previous_tag, last_tag, word)
+        print("length of vector v: ", len(self.vector_v))
+        print(current_feature_vector.shape)
+        numerator = np.dot(self.vector_v, current_feature_vector)
+        denominator = 0.0
+        for tag in self.tags_as_tuple:
+            denominator += np.dot(self.vector_v, self.get_feature_vector(tag, previous_tag, last_tag, word))
+        return np.log(numerator/denominator)
 
+    def get_feature_vector(self, tag, previous_tag, last_tag, word):
+        local_feature_maker = self.gradient_descent.feature_maker
+        new_vector = local_feature_maker.create_sparse_vector_of_features(self.inverted_tags[tag], self.inverted_tags[previous_tag], self.inverted_tags[last_tag], word)
+        return new_vector
 
-def combine_words_with_tags(sentence, tags):
-    return 1
+    def combine_words_with_tags(self, sentence, current_tag_sequence):
+        tagged_sentence = []
+        for index, output in enumerate(current_tag_sequence):
+            to_append = sentence[index] + "_" + str(self.invert_tags[output])
+            tagged_sentence.append(to_append)
+        return tagged_sentence
 
-
-def check_outcome(tagged_set, true_tagged_set):
-    return 1
+    def check_outcome(self, tagged_set, true_tagged_set):
+        count = 0.000001
+        count_of_true = 0.000001
+        for index_of_sentence, true_tagged_sentence in enumerate(true_tagged_set):
+            for index_of_word, true_tagged_word in enumerate(true_tagged_sentence.split()):
+                if true_tagged_word == tagged_set[index_of_sentence][index_of_word]:
+                    count += 1
+                    count_of_true += 1
+                else:
+                    count += 1
+        print("the accuracy is: ", count_of_true/count)
+        print("a sample tagged sentence: ", random.sample(tagged_set, 1))
+        print("another one: ", random.sample(tagged_set, 1))
+        return None
 
