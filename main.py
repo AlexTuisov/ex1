@@ -11,7 +11,7 @@ if __name__ == '__main__':
     unigrams, w = Preprocessing.get_ngrams(1)
     bigrams, w = Preprocessing.get_ngrams(2)
     trigrams, words = Preprocessing.get_ngrams(3)
-    fmaker = featureMaker.feature_maker("<<>>",2)
+    fmaker = featureMaker.feature_maker("<<>>",5)
     fmaker.init_all_params(unigrams,bigrams,trigrams)
     hist = Preprocessing.histogram_of_ngrams(3)
     gascent = g.gradient_ascent(fmaker.number_of_dimensions,10,fmaker,hist)

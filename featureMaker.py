@@ -142,20 +142,20 @@ class feature_maker:
         self.prune_feature_dimensions(params_index)
 
     def create_sparse_vector_of_features(self,current_tag,previous_tag,last_tag,word):
-        feature_vec = csr_matrix((1, self.number_of_dimensions))
+        feature_vec = lil_matrix((1, self.number_of_dimensions))
         unigram = word+self.special_delimiter+current_tag
         bigram = unigram+self.special_delimiter+previous_tag
         trigram = bigram+self.special_delimiter+last_tag
         if self.pruned_feature_index.get(unigram,False):
             unigram_index = self.pruned_feature_index[unigram][0]
-            feature_vec[0][unigram_index] = 1
+            feature_vec[0,unigram_index] = 1
         if self.pruned_feature_index.get(bigram,False):
             bigram_index=self.pruned_feature_index[bigram][0]
-            feature_vec[0][bigram_index] = 1
+            feature_vec[0,bigram_index] = 1
         if self.pruned_feature_index.get(trigram,False):
             trigram_index = self.pruned_feature_index[trigram][0]
-            feature_vec[0][trigram_index] = 1
-        return feature_vec
+            feature_vec[0,trigram_index] = 1
+        return csr_matrix(feature_vec)
 
     def modify_expected_matrix(self, current_tag, previous_tag, last_tag, word, expected_feature_matrix,current_index):
         unigram = word+self.special_delimiter+current_tag
