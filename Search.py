@@ -25,11 +25,11 @@ class Searcher:
         tagged_test_set = []
         for number, sentence in enumerate(pure_test_set):
             start = d.datetime.now()
-            #sentence = unprocessed_sentence.split()
             current_tag_sequence = self.viterbi_run_per_sentence(sentence)
             tagged_sentence = self.combine_words_with_tags(sentence, current_tag_sequence)
             tagged_test_set.append(tagged_sentence)
-            print("iteration number", number, "took:", d.datetime.now() - start)
+            if number % 100 == 0:
+                print("iteration number", number, "took:", d.datetime.now() - start)
         self.check_outcome(tagged_test_set, test_set_with_true_tags)
 
     def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words_without_finish):
@@ -38,10 +38,9 @@ class Searcher:
         length_of_sentence = len(sentence_as_list_of_pure_words)
 
         # first step
-        previous_pi_value_table = np.zeros((len(self.tags), len(self.tags)))
+        previous_pi_value_table = np.full((len(self.tags), len(self.tags)), 0, dtype=np.float)
         previous_pi_value_table[self.tags["start"], self.tags["start"]] = 1
-        list_of_pi_tables = np.zeros((length_of_sentence, len(self.tags), len(self.tags)))
-        table_of_backpointers = np.zeros((length_of_sentence, len(self.tags), len(self.tags)))
+        table_of_backpointers = np.zeros((length_of_sentence-1, len(self.tags), len(self.tags)))
 
         # the iterations
         current_pi_value_table = np.zeros((len(self.tags), len(self.tags)))
@@ -49,15 +48,16 @@ class Searcher:
         #extracting the relevant tags for u and v
 
         for k in range(0, length_of_sentence-1):
-            current_pi_value_table = np.full((len(self.tags), len(self.tags)), -1000000)
+            current_pi_value_table = np.full((len(self.tags), len(self.tags)), 0, dtype=np.float)
             relevant_tags_for_u = self.extract_relevant_tags(k-1, sentence_as_list_of_pure_words)
             relevant_tags_for_v = self.extract_relevant_tags(k, sentence_as_list_of_pure_words)
             for u in relevant_tags_for_u:
                 for v in relevant_tags_for_v:
-                    current_pi_value_table[u][v], table_of_backpointers[k][u][v] = self.calculate_pi_value_and_backpointer(
+                    results = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k], k, sentence_as_list_of_pure_words)
+                    current_pi_value_table[u][v] = results[0]
+                    table_of_backpointers[k][u][v] = results[1]
             previous_pi_value_table = deepcopy(current_pi_value_table)
-            list_of_pi_tables[k] = previous_pi_value_table
 
         # last step
         last_tags = np.unravel_index(current_pi_value_table.argmax(), current_pi_value_table.shape)
@@ -70,31 +70,31 @@ class Searcher:
         relevant_tags_for_t = self.extract_relevant_tags(index-2, sentence)
         denominator = 0.0
         for t in relevant_tags_for_t:
-            denominator += np.exp(self.get_feature_vector(t, v, u, word).dot(self.vector_v))
+            denominator += np.exp(self.get_feature_vector(v, u, t, word).dot(self.vector_v)[0])
         for t in relevant_tags_for_t:
-            pi_values[previous_pi_value_column[t]+self.log_transition_probabilities(v, u, t, word, denominator[0])] = t
+            pi_values[previous_pi_value_column[t]+self.log_transition_probabilities(v, u, t, word, denominator)] = t
         best_value = max(list(pi_values.keys()))
-        return best_value, pi_values[best_value]
+        return (best_value, pi_values[best_value])
 
     def extract_backpointers(self, table_of_backpointers, last_tags, length_of_sentence):
-        last_tag = int(last_tags[1])
-        tag_before_last = int(last_tags[0])
+        last_tag = int(last_tags[0])
+        tag_before_last = int(last_tags[1])
         sentence_as_tags = [last_tag, tag_before_last]
         for index in reversed(range(1, length_of_sentence-1)):
-            new_tag = table_of_backpointers[index][last_tag][tag_before_last]
+            new_tag = table_of_backpointers[index][tag_before_last][last_tag]
             sentence_as_tags.append(int(new_tag))
             last_tag = int(new_tag)
             tag_before_last = int(last_tag)
         sentence_as_tags.reverse()
         return sentence_as_tags[:-2]
 
-    def log_transition_probabilities(self, self_tag, last_tag, previous_tag, word, denominator):
+    def log_transition_probabilities(self, self_tag, previous_tag, last_tag, word, denominator):
         # implementation of formula from slides of tirgul 4
         numerator = np.exp(self.get_feature_vector(self_tag, previous_tag, last_tag, word).dot(self.vector_v))
-        #denominator = 0.0
-        #for tag in self.tags_as_tuple:
-        #    denominator += np.exp(self.get_feature_vector(tag, previous_tag, last_tag, word).dot(self.vector_v))
-        return np.log(float(numerator)/denominator)
+        value = np.log(float(numerator)/denominator)
+        if random.random() < 0.0001:
+            print(float(numerator)/denominator)
+        return +0.5
 
     def get_feature_vector(self, tag, previous_tag, last_tag, word):
         new_vector = self.feature_maker.create_sparse_vector_of_features(self.inverted_tags[tag],
@@ -125,7 +125,7 @@ class Searcher:
 
     def extract_relevant_tags(self, index, sentence):
         if index < 0:
-            return (self.tags["start"], )
+            return (self.tags["start"],)
         if sentence[index] in self.feature_maker.k_most_seen_tags.keys():
             to_return = []
             sequence = tuple(self.feature_maker.k_most_seen_tags[sentence[index]])
