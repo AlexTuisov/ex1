@@ -7,7 +7,7 @@ import random
 def preprocessing():
     train_set_as_dictionary = {}
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train2.wtag")
+    absolute_path = os.path.join(path, "data/train.wtag")
     count = 0
     tags = set([])
     with open(absolute_path) as raw_train_set:
@@ -58,7 +58,7 @@ def prettifying_the_tagged_sentence(sentence):
 
 def get_path_to_training_set():
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train2.wtag")
+    absolute_path = os.path.join(path, "data/train.wtag")
     return absolute_path
 
 def get_path_to_test_set():
@@ -82,14 +82,18 @@ def create_little_test():
 
 def get_pure_test_set():
     pure_test_set = []
+    test_set_with_true_tags = []
     with open(get_path_to_test_set()) as raw_test_set:
         for sentence in raw_test_set:
             pure_sentence = []
+            true_tagged_sentence = []
             for word in sentence.split():
                 pure_word = word.split("_")[0]
                 pure_sentence.append(pure_word)
+                true_tagged_sentence.append(word)
             pure_test_set.append(pure_sentence)
-    return pure_test_set
+            test_set_with_true_tags.append(true_tagged_sentence)
+    return pure_test_set, test_set_with_true_tags
 
 def get_ngrams(n):
     ngrams_as_dictionary = {}
@@ -138,10 +142,6 @@ def histogram_of_ngrams(n):
                 else:
                     histogram_of_trigrams[word_feature] = 1
     return histogram_of_trigrams
-
-
-
-
 
 def longest_sentence():
     with open(get_path_to_training_set()) as train:

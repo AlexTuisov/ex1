@@ -18,6 +18,6 @@ if __name__ == '__main__':
     hope = gascent.gradient_ascent()
     pure_little_test, little_test = Preprocessing.create_little_test()
     my_little_viterbi = Search.Searcher(tags, gascent, hope[0])
-    my_little_viterbi.viterbi_full_run(Preprocessing.get_pure_test_set() , Preprocessing.get_path_to_test_set())
+    my_little_viterbi.viterbi_full_run(Preprocessing.get_pure_test_set()[0], Preprocessing.get_pure_test_set()[1])
 
 
