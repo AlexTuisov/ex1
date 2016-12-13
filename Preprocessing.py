@@ -10,6 +10,7 @@ def preprocessing():
     absolute_path = os.path.join(path, "data/train.wtag")
     count = 0
     tags = set([])
+    tags_count = {}
     with open(absolute_path) as raw_train_set:
         for sentence in raw_train_set:
             train_set_as_strings = sentence.split()
@@ -17,6 +18,10 @@ def preprocessing():
                 try:
                     word, tag = tagged_word.split('_')
                     tags.add(tag)
+                    if tag in tags_count.keys():
+                        tags_count[tag] += 1
+                    else:
+                        tags_count[tag] = 1
                 except:
                     continue
                 if word not in train_set_as_dictionary.keys():
@@ -26,10 +31,8 @@ def preprocessing():
                     train_set_as_dictionary[word][tag] = 1
                 else:
                     train_set_as_dictionary[word][tag] += 1
-    print(count)
-    print(tags)
-    #print(train_set_as_dictionary)
-    return set(tags)
+    inverse_tag_count = {number: tag for tag, number in tags_count.items()}
+    return set(tags), tags_count, inverse_tag_count
 
 #this function should take in sentence from the .wtag file,
 #and output two tuples of strings: 1. tuple of untagged words in a sentence
@@ -66,19 +69,16 @@ def get_path_to_test_set():
     absolute_path = os.path.join(path, "data/test.wtag")
     return absolute_path
 
-def create_little_test():
-    pure_test_set = []
-    tagged_little_test = []
-    with open(get_path_to_test_set()) as raw_test_set:
-        if random.random() < 0.002:
-            for sentence in raw_test_set:
-                tagged_little_test.append(sentence)
-                pure_sentence = []
-                for word in sentence.split():
-                    pure_word = word.split("_")[0]
-                    pure_sentence.append(pure_word)
-                pure_test_set.append(pure_sentence)
-    return pure_test_set, tagged_little_test
+def create_little_test(proportion):
+    little_test = get_pure_test_set()[0]
+    true_little_test = get_pure_test_set()[1]
+    to_return = []
+    to_return_true_tagged = []
+    for number, sentence in enumerate(little_test):
+        if random.random() < proportion:
+            to_return.append(sentence)
+            to_return_true_tagged.append(true_little_test[number])
+    return to_return, to_return_true_tagged
 
 def get_pure_test_set():
     pure_test_set = []
