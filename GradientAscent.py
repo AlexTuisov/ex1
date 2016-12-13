@@ -1,11 +1,10 @@
 import Preprocessing as pr
 import numpy as np
+import threading
 import datetime as d
+import time
 from scipy.optimize import fmin_l_bfgs_b
-import featureMaker
 from scipy.sparse import csr_matrix
-from scipy.sparse import lil_matrix
-import random
 def vector_multiplication(vector_a, vector_b):
     return csr_matrix.dot(vector_a, vector_b)
 
@@ -14,7 +13,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         self.number_of_dimensions=number_of_dimensions
         self.lambda_value = lambda_value
         #self.tags = tags
-        #self.vector_v = self.vector_v_init()
+        self.vector_v = 0
         self.feature_index = 0
         self.feature_maker = feature_maker
         self.sum_of_feature_vector = self.feature_maker.sum_of_feature_vector()
@@ -66,7 +65,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         return res.transpose()
 
 
-    def probability_calculation(self,feature,sum_of_exp_prem,vector_v):#TODO : handle non seen wordsp
+    def probability_calculation(self,feature,sum_of_exp_prem,vector_v):
         numerator = np.exp(feature.dot(vector_v))
         return float(float(numerator)/sum_of_exp_prem)
 
@@ -75,7 +74,9 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         print("starting gradient ascent")
         vector_v0 = np.ndarray((1,self.number_of_dimensions))
         vector_v0.fill(0)
-        return fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,self.gradient_of_log_likelihood)
+        results = fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,self.gradient_of_log_likelihood,factr=1e10)
+        self.vector_v=results[0]
+        return results
 
 
 
@@ -85,6 +86,34 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
 
 
 
+
+    def calculation(self,trigram,vector_v,lock):
+        sum = 0
+        while threading.active_count() > 10:
+            #wait
+            continue
+        matrix = self.feature_maker.expected_feature_matrix_index[trigram]
+        sum_of_exponentias = self.sum_of_exponential_permutations(matrix, vector_v)
+        for row in range(matrix.get_shape()[0]):
+            feature = matrix.getrow(row)
+            expected_feature = feature.multiply(self.probability_calculation(feature, sum_of_exponentias, vector_v))
+            sum+=expected_feature.multiply(self.feature_maker.param_index[trigram][1])
+        return sum
+
+    def test(self,vector_v):
+        expected_sum = csr_matrix((1, self.number_of_dimensions))
+        threads=[]
+        lock = threading.Lock()
+        results = []
+        for trigram in self.feature_maker.expected_feature_matrix_index:
+            t = threading.Thread(target=self.calculation,args=(trigram,vector_v,lock))
+            threads.append(t)
+            results.append(t.start())
+        print(len(results))
+        for thread in threads:
+            thread.join()
+        res = (expected_sum - self.sum_of_feature_vector + csr_matrix(vector_v).multiply(self.lambda_value)).toarray()
+        return res.transpose()
 
 
 

@@ -2,6 +2,9 @@
 from copy import deepcopy
 
 from scipy.sparse import csr_matrix
+from scipy.sparse import lil_matrix
+
+from snowballstemmer import EnglishStemmer as es
 
 import GradientAscent
 import numpy as np
@@ -36,7 +39,6 @@ class Searcher:
         self.check_outcome(tagged_test_set, test_set_with_true_tags)
 
     def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words_without_finish):
-        start = d.datetime.now()
         sentence_as_list_of_pure_words = list(sentence_as_list_of_pure_words_without_finish) + ["finish", "finish"]
         length_of_sentence = len(sentence_as_list_of_pure_words)
 
@@ -72,12 +74,17 @@ class Searcher:
         pi_values = {}
         relevant_tags_for_t = self.extract_relevant_tags(index-2, sentence)
         denominator = 0.0
-        for t in relevant_tags_for_t:
-            denominator += np.exp(self.get_feature_vector(v, u, t, word).dot(self.vector_v)[0])
+        permutation_matrix = self.create_exponential_permutations_matrix(relevant_tags_for_t,v,u,word)
+        """for t in relevant_tags_for_t:
+            denominator += np.exp(self.get_feature_vector(v, u, t, word).dot(self.vector_v)[0])"""
+        denominator = self.gradient_descent.sum_of_exponential_permutations(permutation_matrix,self.vector_v)
         for t in relevant_tags_for_t:
             pi_values[previous_pi_value_row[t]+self.log_transition_probabilities(v, u, t, word, denominator)] = t
         best_value = max(list(pi_values.keys()))
         return (best_value, pi_values[best_value])
+
+
+
 
     def extract_backpointers(self, table_of_backpointers, last_tags, length_of_sentence):
         last_tag = int(last_tags[0])
@@ -138,3 +145,12 @@ class Searcher:
             return (self.tags["NNP"], self.tags["VB"], self.tags["JJ"])
         else:
             return(self.tags["NN"], self.tags["VB"], self.tags["JJ"])
+
+
+    def create_exponential_permutations_matrix(self,relevant_tags,current_tag,previous_tag,word):
+        permutation_matrix = lil_matrix((len(relevant_tags),self.gradient_descent.feature_maker.number_of_dimensions))
+        current_index = 0
+        for relevant_tag in relevant_tags:
+            self.feature_maker.modify_expected_matrix(self.inverted_tags[current_tag], self.inverted_tags[previous_tag], self.inverted_tags[relevant_tag], word, permutation_matrix,current_index)
+            current_index += 1
+        return csr_matrix(permutation_matrix)
