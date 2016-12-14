@@ -7,6 +7,7 @@ import GradientAscent as g
 import random
 
 if __name__ == '__main__':
+    start = d.datetime.now()
     tags, tags_count, inverse_tag_count = Preprocessing.preprocessing()
     values = sorted(tags_count.values())
     values.reverse()
@@ -28,5 +29,6 @@ if __name__ == '__main__':
 
     my_little_viterbi = Search.Searcher(tags, gascent, hope[0])
     my_little_viterbi.viterbi_full_run(little_test, pure_little_test)
+    print("The time whole program took:", d.datetime.now()-start)
 
 

@@ -84,22 +84,32 @@ class Searcher:
 
     def calculate_pi_value_and_backpointer(self, u, v, previous_pi_value_row, word, index, sentence):
         pi_values = {}
-        relevant_tags_for_t = self.extract_relevant_tags(index-2, sentence)
-        permutation_matrix = self.create_exponential_permutations_matrix(relevant_tags_for_t,v,u,word)
-        denominator = self.gradient_descent.sum_of_exponential_permutations(permutation_matrix,self.vector_v)
+        relevant_tags_for_t = self.extract_relevant_tags(index - 2, sentence)
+        relevant_tags_for_v = self.extract_relevant_tags(index, sentence)
+        exponential_matrix_dictionary = {}
+        denominator_dictionary = {}
         for t in relevant_tags_for_t:
-            pi_values[previous_pi_value_row[t]+self.log_transition_probabilities(v, u, t, word, denominator)] = t
+            permutation_matrix = self.create_exponential_permutations_matrix(relevant_tags_for_v, u, t, word)
+            exponential_matrix_dictionary[t] = permutation_matrix
+        for t in exponential_matrix_dictionary:
+            permutation_matrix = exponential_matrix_dictionary[t]
+            denominator_dictionary[t] = self.gradient_descent.sum_of_exponential_permutations(permutation_matrix,
+                                                                                              self.vector_v)
+        exponential_matrix_dictionary = {}  # memmory purpose
+        for t in relevant_tags_for_t:
+            pi_values[previous_pi_value_row[t] + self.log_transition_probabilities(v, u, t, word,
+                                                                                   denominator_dictionary[t])] = t
         best_value = max(list(pi_values.keys()))
         return (best_value, pi_values[best_value])
 
     def extract_backpointers(self, table_of_backpointers, last_tags, length_of_sentence, sentence):
         last_tag = int(last_tags[0])
         tag_before_last = int(last_tags[1])
-        tag_before_last = self.special_casing(tag_before_last, str.lower(sentence[length_of_sentence-3]))
+        tag_before_last = self.postprocessing(tag_before_last, str.lower(sentence[length_of_sentence-3]))
         sentence_as_tags = [last_tag, tag_before_last]
         for index in reversed(range(1, length_of_sentence-1)):
             new_tag = table_of_backpointers[index][tag_before_last][last_tag]
-            new_tag = self.special_casing(new_tag, str.lower(sentence[index-2]))
+            new_tag = self.postprocessing(new_tag, str.lower(sentence[index-2]))
             sentence_as_tags.append(int(new_tag))
             last_tag = int(new_tag)
             tag_before_last = int(last_tag)
@@ -162,34 +172,20 @@ class Searcher:
         return tuple(to_return)
 
 
-    def create_exponential_permutations_matrix(self,relevant_tags,current_tag,previous_tag,word):
-        permutation_matrix = lil_matrix((len(relevant_tags),self.gradient_descent.feature_maker.number_of_dimensions))
+    def create_exponential_permutations_matrix(self,relevant_tags,previous_tag,last_tag, word):
+        permutation_matrix = lil_matrix((len(relevant_tags), self.gradient_descent.feature_maker.number_of_dimensions))
         current_index = 0
-        for relevant_tag in relevant_tags:
-            self.feature_maker.modify_expected_matrix(self.inverted_tags[current_tag], self.inverted_tags[previous_tag], self.inverted_tags[relevant_tag], word, permutation_matrix,current_index)
+        for current_tag in relevant_tags:
+            self.feature_maker.modify_expected_matrix(self.inverted_tags[current_tag], self.inverted_tags[previous_tag],self.inverted_tags[last_tag], word, permutation_matrix, current_index)
             current_index += 1
         return csr_matrix(permutation_matrix)
 
-    def special_casing(self, supposed_tag, word):
+    def postprocessing(self, supposed_tag, word):
         actual_tag = supposed_tag
-        """
-        if word == "a" or word == "the":
-            actual_tag = self.tags["DT"]
-        elif word == ",":
-            actual_tag = self.tags[","]
-        elif word == ".":
-            actual_tag = self.tags["."]
-        elif word == ":":
-            actual_tag = self.tags[":"]
-        elif word == "\'":
-            actual_tag = self.tags["\'\'"]
-        elif word == "`":
-            actual_tag = self.tags["`"]
-        elif word == "$":
-            actual_tag = self.tags["$"]
-        """
         if word in self.feature_maker.k_most_seen_tags.keys():
             if len(self.feature_maker.k_most_seen_tags[word]) >= 1:
                 if self.feature_maker.k_most_seen_tags[word][0] in self.tags.keys():
                     actual_tag = self.tags[self.feature_maker.k_most_seen_tags[word][0]]
+        if any(char.isdigit() for char in word):
+            actual_tag = self.tags["CD"]
         return actual_tag
