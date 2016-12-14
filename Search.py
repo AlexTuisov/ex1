@@ -5,7 +5,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 
 from snowballstemmer import EnglishStemmer as es
-
+import sys
 import GradientAscent
 import numpy as np
 import random
@@ -43,7 +43,7 @@ class Searcher:
         length_of_sentence = len(sentence_as_list_of_pure_words)
 
         # first step
-        previous_pi_value_table = np.full((len(self.tags), len(self.tags)), 0, dtype=np.float)
+        previous_pi_value_table = np.full((len(self.tags), len(self.tags)),0, dtype=np.float)
         previous_pi_value_table[self.tags["start"], self.tags["start"]] = 1
         table_of_backpointers = np.zeros((length_of_sentence-1, len(self.tags), len(self.tags)), dtype=np.int16)
 
@@ -58,6 +58,9 @@ class Searcher:
             relevant_tags_for_v = self.extract_relevant_tags(k, sentence_as_list_of_pure_words)
             for u in self.tags_as_tuple:
                 for v in self.tags_as_tuple:
+                    """if (u not in relevant_tags_for_u) or (v not in relevant_tags_for_v):
+                        current_pi_value_table[u][v] = -(sys.float_info.max - 10000)
+                        continue"""
                     results = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k], k, sentence_as_list_of_pure_words)
                     current_pi_value_table[u][v] = results[0]
@@ -73,13 +76,18 @@ class Searcher:
     def calculate_pi_value_and_backpointer(self, u, v, previous_pi_value_row, word, index, sentence):
         pi_values = {}
         relevant_tags_for_t = self.extract_relevant_tags(index-2, sentence)
-        denominator = 0.0
-        permutation_matrix = self.create_exponential_permutations_matrix(relevant_tags_for_t,v,u,word)
-        """for t in relevant_tags_for_t:
-            denominator += np.exp(self.get_feature_vector(v, u, t, word).dot(self.vector_v)[0])"""
-        denominator = self.gradient_descent.sum_of_exponential_permutations(permutation_matrix,self.vector_v)
+        relevant_tags_for_v = self.extract_relevant_tags(index, sentence)
+        exponential_matrix_dictionary = {}
+        denominator_dictionary ={}
         for t in relevant_tags_for_t:
-            pi_values[previous_pi_value_row[t]+self.log_transition_probabilities(v, u, t, word, denominator)] = t
+            permutation_matrix = self.create_exponential_permutations_matrix(relevant_tags_for_v,u,t,word)
+            exponential_matrix_dictionary[t]=permutation_matrix
+        for t in exponential_matrix_dictionary:
+            permutation_matrix = exponential_matrix_dictionary[t]
+            denominator_dictionary[t]=self.gradient_descent.sum_of_exponential_permutations(permutation_matrix,self.vector_v)
+        exponential_matrix_dictionary = {}#memmory purpose
+        for t in relevant_tags_for_t:
+            pi_values[previous_pi_value_row[t]+self.log_transition_probabilities(v, u, t, word, denominator_dictionary[t])] = t
         best_value = max(list(pi_values.keys()))
         return (best_value, pi_values[best_value])
 
@@ -147,10 +155,10 @@ class Searcher:
             return(self.tags["NN"], self.tags["VB"], self.tags["JJ"])
 
 
-    def create_exponential_permutations_matrix(self,relevant_tags,current_tag,previous_tag,word):
+    def create_exponential_permutations_matrix(self,relevant_tags, previous_tag, last_tag, word):
         permutation_matrix = lil_matrix((len(relevant_tags),self.gradient_descent.feature_maker.number_of_dimensions))
         current_index = 0
-        for relevant_tag in relevant_tags:
-            self.feature_maker.modify_expected_matrix(self.inverted_tags[current_tag], self.inverted_tags[previous_tag], self.inverted_tags[relevant_tag], word, permutation_matrix,current_index)
+        for current_tag in relevant_tags:
+            self.feature_maker.modify_expected_matrix(self.inverted_tags[current_tag], self.inverted_tags[previous_tag], self.inverted_tags[last_tag], word, permutation_matrix,current_index)
             current_index += 1
         return csr_matrix(permutation_matrix)

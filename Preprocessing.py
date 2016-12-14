@@ -7,7 +7,7 @@ import random
 def preprocessing():
     train_set_as_dictionary = {}
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train.wtag")
+    absolute_path = os.path.join(path, "data/train2.wtag")
     count = 0
     tags = set([])
     with open(absolute_path) as raw_train_set:
@@ -58,7 +58,7 @@ def prettifying_the_tagged_sentence(sentence):
 
 def get_path_to_training_set():
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train.wtag")
+    absolute_path = os.path.join(path, "data/train2.wtag")
     return absolute_path
 
 def get_path_to_test_set():
