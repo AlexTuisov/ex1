@@ -14,7 +14,7 @@ if __name__ == '__main__':
         print(value, inverse_tag_count[value])
         if value < 200:
             tags.discard(inverse_tag_count[value])
-    little_test, pure_little_test = Preprocessing.create_little_test(0.05)
+    little_test, pure_little_test = Preprocessing.create_little_test(0.1)
     print(little_test)
     print(pure_little_test)
     unigrams, w = Preprocessing.get_ngrams(1)

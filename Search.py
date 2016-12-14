@@ -95,7 +95,7 @@ class Searcher:
     def extract_backpointers(self, table_of_backpointers, last_tags, length_of_sentence, sentence):
         last_tag = int(last_tags[0])
         tag_before_last = int(last_tags[1])
-        tag_before_last = self.special_casing(tag_before_last, length_of_sentence-1)
+        tag_before_last = self.special_casing(tag_before_last, str.lower(sentence[length_of_sentence-3]))
         sentence_as_tags = [last_tag, tag_before_last]
         for index in reversed(range(1, length_of_sentence-1)):
             new_tag = table_of_backpointers[index][tag_before_last][last_tag]
@@ -171,6 +171,8 @@ class Searcher:
         return csr_matrix(permutation_matrix)
 
     def special_casing(self, supposed_tag, word):
+        actual_tag = supposed_tag
+        """
         if word == "a" or word == "the":
             actual_tag = self.tags["DT"]
         elif word == ",":
@@ -180,13 +182,14 @@ class Searcher:
         elif word == ":":
             actual_tag = self.tags[":"]
         elif word == "\'":
-            actual_tag = self.tags["\'"]
+            actual_tag = self.tags["\'\'"]
         elif word == "`":
             actual_tag = self.tags["`"]
         elif word == "$":
             actual_tag = self.tags["$"]
-        elif len(self.feature_maker.k_most_seen_tags[word]) >= 1:
-            actual_tag = self.tags[self.feature_maker.k_most_seen_tag[word][0]]
-        else:
-            actual_tag = supposed_tag
+        """
+        if word in self.feature_maker.k_most_seen_tags.keys():
+            if len(self.feature_maker.k_most_seen_tags[word]) >= 1:
+                if self.feature_maker.k_most_seen_tags[word][0] in self.tags.keys():
+                    actual_tag = self.tags[self.feature_maker.k_most_seen_tags[word][0]]
         return actual_tag
