@@ -4,8 +4,13 @@ import datetime as d
 import GradientAscent as g
 import numpy as np
 import matrixTest as mt
+
 if __name__ == '__main__':
-    unigrams ,w= Preprocessing.get_ngrams(1)
+    str = "hopefully"
+    if str.endswith("ly"):
+        print("works")
+
+    """unigrams ,w= Preprocessing.get_ngrams(1)
     bigrams ,w= Preprocessing.get_ngrams(2)
     trigrams, words = Preprocessing.get_ngrams(3)
     fmaker = featureMaker.feature_maker("<<>>",44)
@@ -16,7 +21,7 @@ if __name__ == '__main__':
     hope = gascent.gradient_ascent()
     print(hope)
     print("it took :",str(d.datetime.now()-start))
-    print("v_norm: ",str(np.dot(hope[0],hope[0])))
+    print("v_norm: ",str(np.dot(hope[0],hope[0])))"""
     """print(index_number)
     x = g.gradient_ascent(100000,10,())
     a=x.vector_v_init()

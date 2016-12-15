@@ -47,7 +47,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
 
 
     def regularized_log_likelihood(self,vector_v):
-        res = self.log_of_denominator(vector_v)-self.log_of_numerator(vector_v)+5*np.dot(vector_v,vector_v)
+        res = self.log_of_denominator(vector_v)-self.log_of_numerator(vector_v)+float(float(self.lambda_value)/2)*np.dot(vector_v,vector_v)
         print(res)
         return res
 
@@ -76,6 +76,7 @@ class gradient_ascent: #TODO: handle non seen tags!!!!!
         vector_v0.fill(0)
         results = fmin_l_bfgs_b(self.regularized_log_likelihood,vector_v0,self.gradient_of_log_likelihood,factr=1e10)
         self.vector_v=results[0]
+        print("gradient ascent ended")
         return results
 
 

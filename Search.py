@@ -1,6 +1,6 @@
 # File that contains search algorithms once the model has been learned
 from copy import deepcopy
-
+import sys
 from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 
@@ -14,14 +14,14 @@ from multiprocessing import Pool
 
 
 class Searcher:
-    def __init__(self, tags, gradient_descent, vector_v):
+    def __init__(self, tags, gradient_ascent, vector_v):
         self.tags = {tag: number+1 for number, tag in enumerate(tags)}
         self.tags["start"] = 0
         self.inverted_tags = {number: tag for tag, number in self.tags.items()}
         self.tags_as_tuple = tuple(sorted(list(self.tags.values())))
-        self.gradient_descent = gradient_descent
+        self.gradient_ascent = gradient_ascent
         self.vector_v = vector_v
-        self.feature_maker = gradient_descent.feature_maker
+        self.feature_maker = gradient_ascent.feature_maker
 
     def viterbi_full_run(self, pure_test_set, test_set_with_true_tags):
         accuracy_list = []
@@ -31,23 +31,10 @@ class Searcher:
             true_sentence = test_set_with_true_tags[number]
             accuracy_list.append(self.check_outcome((tagged_sentence,), (true_sentence,)))
         average_accuracy = sum(accuracy_list)/len(accuracy_list)
-        print("The average accuracy is:", average_accuracy)
+        """print("The average accuracy is:", average_accuracy)
         print("A sample tagged sentance:")
-        print(random.choice(results_list))
-
-        """
-        for number, sentence in enumerate(pure_test_set):
-            true_sentence = test_set_with_true_tags[number]
-            start = d.datetime.now()
-            current_tag_sequence = self.viterbi_run_per_sentence(sentence)
-            tagged_sentence = self.combine_words_with_tags(sentence, current_tag_sequence)
-            tagged_test_set.append(tagged_sentence)
-            print("iteration number", number, "took:", d.datetime.now() - start)
-            print(tagged_sentence)
-            print(true_sentence)
-            print("-------------------------")
-            self.check_outcome((tagged_sentence,), (true_sentence,))
-        """
+        print(random.choice(results_list))"""
+        return average_accuracy
 
 
     def viterbi_run_per_sentence(self, sentence_as_list_of_pure_words_without_finish):
@@ -70,6 +57,9 @@ class Searcher:
             relevant_tags_for_v = self.extract_relevant_tags(k, sentence_as_list_of_pure_words)
             for u in self.tags_as_tuple:
                 for v in self.tags_as_tuple:
+                    """if (v not in relevant_tags_for_v) or (u not in relevant_tags_for_u):
+                        current_pi_value_table[u][v] = -(sys.float_info.max/1000000)
+                        continue"""
                     results = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k], k, sentence_as_list_of_pure_words)
                     current_pi_value_table[u][v] = results[0]
@@ -93,8 +83,8 @@ class Searcher:
             exponential_matrix_dictionary[t] = permutation_matrix
         for t in exponential_matrix_dictionary:
             permutation_matrix = exponential_matrix_dictionary[t]
-            denominator_dictionary[t] = self.gradient_descent.sum_of_exponential_permutations(permutation_matrix,
-                                                                                              self.vector_v)
+            denominator_dictionary[t] = self.gradient_ascent.sum_of_exponential_permutations(permutation_matrix,
+                                                                                             self.vector_v)
         exponential_matrix_dictionary = {}  # memmory purpose
         for t in relevant_tags_for_t:
             pi_values[previous_pi_value_row[t] + self.log_transition_probabilities(v, u, t, word,
@@ -144,7 +134,6 @@ class Searcher:
                     count_of_true += 1
                 else:
                     count += 1
-        print("the accuracy is: ", count_of_true/count)
         return float(count_of_true/count)
 
     def extract_relevant_tags(self, index, sentence):
@@ -165,7 +154,7 @@ class Searcher:
 
     def get_open_tags(self):
         #open parts of speech in english
-        open_tags = ("NN", "NNP", "JJ", "NNS", "RB", "VBD", "VB", "VBZ", "VBN", "VBG", "VBP")
+        open_tags = ("NN", "NNP", "JJ", "NNS", "RB", "VBD", "VB", "VBZ", "VBN", "VBG", "VBP","CD")
         to_return = []
         for item in open_tags:
             to_return.append(self.tags[item])
@@ -173,7 +162,7 @@ class Searcher:
 
 
     def create_exponential_permutations_matrix(self,relevant_tags,previous_tag,last_tag, word):
-        permutation_matrix = lil_matrix((len(relevant_tags), self.gradient_descent.feature_maker.number_of_dimensions))
+        permutation_matrix = lil_matrix((len(relevant_tags), self.gradient_ascent.feature_maker.number_of_dimensions))
         current_index = 0
         for current_tag in relevant_tags:
             self.feature_maker.modify_expected_matrix(self.inverted_tags[current_tag], self.inverted_tags[previous_tag],self.inverted_tags[last_tag], word, permutation_matrix, current_index)
@@ -186,6 +175,4 @@ class Searcher:
             if len(self.feature_maker.k_most_seen_tags[word]) >= 1:
                 if self.feature_maker.k_most_seen_tags[word][0] in self.tags.keys():
                     actual_tag = self.tags[self.feature_maker.k_most_seen_tags[word][0]]
-        if any(char.isdigit() for char in word):
-            actual_tag = self.tags["CD"]
         return actual_tag

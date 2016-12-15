@@ -151,4 +151,21 @@ def longest_sentence():
                 longest = len(sentence.split())
     return longest
 
+def percentage_of_unknown_words():
+    seen_words = set()
+    with open(get_path_to_training_set()) as train:
+        for sentence in train:
+            for word in (sentence.split()):
+                seen_words.add(word)
+    count = 0.0
+    count_unmatching = 0.0
+    with open(get_path_to_test_set()) as test:
+        for sentence in test:
+            for word in (sentence.split()):
+                if word in seen_words:
+                    count += 1
+                else:
+                    count += 1
+                    count_unmatching += 1
+    print("The unseen words percentage is:", count_unmatching/count)
 #
