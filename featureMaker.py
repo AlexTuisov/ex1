@@ -7,7 +7,7 @@ from snowballstemmer import EnglishStemmer as es
 
 class feature_maker:
 
-    def __init__(self,special_delimiter,k,extended):
+    def __init__(self,special_delimiter,k,extended,booster):
         self.special_delimiter =special_delimiter
         self.tag_counter={}
         self.number_of_dimensions=0
@@ -24,7 +24,7 @@ class feature_maker:
         self.special_suffixes = ["ly", "al", "or", "ing", "ful", "ism", "ist", "ion", "sion", "tion", "acy",
                                  "hood", "or", "ar", "age", "like", "once", "ness", "able", "ible", "ify",
                                  "ic", "ate", "ous", "ize", "ish"]
-
+        self.booster = booster
 
     def create_feature_matrix(self):
         feature_matrix = lil_matrix((self.number_of_sentences,self.number_of_dimensions))
@@ -86,15 +86,12 @@ class feature_maker:
 
 
     def get_feature_params_from_index(self, unigrams, bigrams, trigrams):
-        stemmer = es()
         params_index = {}
         index_number = 0
         feature_indexes_list = list()
         for index in unigrams:
             sentence = unigrams[index]
             for word in sentence:
-                #stemmed_word = stemmer.stemWord(word)
-                #stemmed_word = stemmed_word.lower()
                 if not self.tag_counter.get(word,False):
                     self.tag_counter[word]={}
                     self.tag_counter[word][sentence[word][0][0][0]]=1
@@ -115,8 +112,6 @@ class feature_maker:
         for index in bigrams:
             sentence = bigrams[index]
             for word in sentence:
-                #stemmed_word = stemmer.stemWord(word)
-                #stemmed_word = stemmed_word.lower()
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0][0])+self.special_delimiter+str(sentence[word][0][0][1])
                 if not params_index.get(word_with_tag,False):
                     params_index[word_with_tag] = [index_number,1,[index,]]
@@ -128,8 +123,6 @@ class feature_maker:
         for index in trigrams:
             sentence = trigrams[index]
             for word in sentence:
-                #stemmed_word = stemmer.stemWord(word)
-                #stemmed_word = stemmed_word.lower()
                 if self.extended:
                     index_number = self.add_features_for_word_extended_model(word,sentence[word][0][0][0],sentence[word][0][0][1],sentence[word][0][0][2],index_number,params_index,index)
                 word_with_tag = word+self.special_delimiter+str(sentence[word][0][0][0])+self.special_delimiter+str(sentence[word][0][0][1])+self.special_delimiter+str(sentence[word][0][0][2])
@@ -140,6 +133,22 @@ class feature_maker:
                     params_index[word_with_tag][1] += 1
                     params_index[word_with_tag][2].append(index)
                     params_index[word_with_tag][3].append(sentence[word][0][1])
+                new_feature_bigram = str(sentence[word][0][0][0])+"_"+str(sentence[word][0][0][1])
+                new_feature_trigram = str(sentence[word][0][0][0])+"_"+str(sentence[word][0][0][1])+"_"+str(sentence[word][0][0][2])
+                if not params_index.get(new_feature_bigram,False):
+                    params_index[new_feature_bigram] = [index_number, 1, [index, ], [sentence[word][0][1], ]]
+                    index_number += 1
+                else:
+                    params_index[new_feature_bigram][1] += 1
+                    params_index[new_feature_bigram][2].append(index)
+                    params_index[new_feature_bigram][3].append(sentence[word][0][1])
+                if not params_index.get(new_feature_trigram,False):
+                    params_index[new_feature_trigram] = [index_number, 1, [index, ], [sentence[word][0][1], ]]
+                    index_number += 1
+                else:
+                    params_index[new_feature_trigram][1] += 1
+                    params_index[new_feature_trigram][2].append(index)
+                    params_index[new_feature_trigram][3].append(sentence[word][0][1])
         number_of_sentences = len(unigrams)
         self.number_of_sentences = number_of_sentences
         self.param_index = params_index
@@ -161,12 +170,20 @@ class feature_maker:
         if self.pruned_feature_index.get(trigram,False):
             trigram_index = self.pruned_feature_index[trigram][0]
             feature_vec[0,trigram_index] = 1
+        bigram_feature = current_tag +"_"+ previous_tag
+        trigram_feature = current_tag + "_" + previous_tag + "_" + last_tag
+        if self.pruned_feature_index.get(bigram_feature, False):
+            index = self.pruned_feature_index[bigram_feature][0]
+            feature_vec[0, index] = 1
+        if self.pruned_feature_index.get(trigram_feature, False):
+            index = self.pruned_feature_index[trigram_feature][0]
+            feature_vec[0, index] = 1
         if self.extended:
             relevant_extended_features = self.return_relevat_features(word,current_tag,previous_tag,last_tag)
             for extended_feature in relevant_extended_features:
                 if self.pruned_feature_index.get(extended_feature, False):
                     extended_feature_index = self.pruned_feature_index[extended_feature][0]
-                    feature_vec[0,extended_feature_index] =1
+                    feature_vec[0,extended_feature_index] =self.booster
         return csr_matrix(feature_vec)
 
     def modify_expected_matrix(self, current_tag, previous_tag, last_tag, word, expected_feature_matrix,current_index):
@@ -182,6 +199,14 @@ class feature_maker:
         if self.pruned_feature_index.get(trigram,False):
             trigram_index = self.pruned_feature_index[trigram][0]
             expected_feature_matrix[current_index,trigram_index] = 1
+        bigram_feature = current_tag +"_"+ previous_tag
+        trigram_feature = current_tag+"_"+previous_tag+"_"+last_tag
+        if self.pruned_feature_index.get(bigram_feature,False):
+            index = self.pruned_feature_index[bigram_feature][0]
+            expected_feature_matrix[current_index,index] = 1
+        if self.pruned_feature_index.get(trigram_feature,False):
+            index = self.pruned_feature_index[trigram_feature][0]
+            expected_feature_matrix[current_index,index] = 1
         if self.extended:
             relevant_extended_features = self.return_relevat_features(word, current_tag, previous_tag,last_tag)
             for extended_feature in relevant_extended_features:
@@ -251,7 +276,14 @@ class feature_maker:
                     current_index += 1
                 else:
                     param_index[feature_name][2].append(sentence_number)
-        unigram_extended_feature = "<<"+current_tag+">>"
+        if word.lower()=="the" and current_tag=="DT":
+            feature_name = "<<"+word+"_"+current_tag+">>"
+            if not param_index.get(feature_name, False):
+                param_index[feature_name] = [current_index, 1, [sentence_number, ]]
+                current_index += 1
+            else:
+                param_index[feature_name][2].append(sentence_number)
+        """unigram_extended_feature = "<<"+current_tag+">>"
         bigram_extended_feature = "<<"+current_tag+"_"+previous_tag+">>"
         trigram_extended_feature ="<<"+current_tag+"_"+previous_tag+"_"+last_tag+">>"
         if not param_index.get(unigram_extended_feature, False):
@@ -268,7 +300,7 @@ class feature_maker:
             param_index[trigram_extended_feature] = [current_index, 1, [sentence_number, ]]
             current_index += 1
         else:
-            param_index[trigram_extended_feature][2].append(sentence_number)
+            param_index[trigram_extended_feature][2].append(sentence_number)"""
         return current_index
 
 
@@ -285,12 +317,8 @@ class feature_maker:
         for suffix in self.special_suffixes:
             if word.endswith(suffix):
                 relevant_features.append("<<"+suffix + "_suffix>>" + self.special_delimiter + current_tag)
-        unigram_extended_feature = "<<" + current_tag + ">>"
-        bigram_extended_feature = "<<" + current_tag + "_" + previous_tag + ">>"
-        trigram_extended_feature = "<<" + current_tag + "_" + previous_tag + "_" + last_tag + ">>"
-        relevant_features.append(unigram_extended_feature)
-        relevant_features.append(bigram_extended_feature)
-        relevant_features.append(trigram_extended_feature)
+        if word.lower()=="the" and current_tag=="DT":
+            relevant_features.append("<<"+word+"_"+current_tag+">>")
         return relevant_features
 
 
@@ -311,124 +339,3 @@ class feature_maker:
 
 
 
-"""    def create_expected_matrix(self):
-        print("expected matrix init")
-        rows_count = 1
-        current_index = 0
-        index =0
-        stemmer = es()
-        while (index <= self.number_of_dimensions-1):
-            feature = self.reverse_param_index[index]
-            if len(feature.split(self.special_delimiter)) > 3:
-                trigram_data = self.param_index[feature]
-                current_word = feature.split(self.special_delimiter)[0]
-                for words in trigram_data[3]:
-                    lists_of_k_most_seen_tags = []
-                    if self.k_most_seen_tags.get(current_word,False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[current_word])
-                    if self.k_most_seen_tags.get(words[0],False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[0]])
-                    if self.k_most_seen_tags.get(words[1],False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
-                    for element in itertools.product(*lists_of_k_most_seen_tags):
-                        rows_count += 1
-            index += 1
-        index = 0
-        print(rows_count)
-        expected_matrix = lil_matrix((rows_count,self.number_of_dimensions),dtype=int)
-        while (index <= self.number_of_dimensions-1):
-            feature = self.reverse_param_index[index]
-            if len(feature.split(self.special_delimiter))>3:
-                trigram_data = self.param_index[feature]
-                current_word = feature.split(self.special_delimiter)[0]
-                for words in trigram_data[3]:
-                    lists_of_k_most_seen_tags = []
-                    if self.k_most_seen_tags.get(current_word, False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[current_word])
-                    if self.k_most_seen_tags.get(words[0], False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[0]])
-                    if self.k_most_seen_tags.get(words[1], False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
-                    for element in itertools.product(*lists_of_k_most_seen_tags):
-                        self.modify_expected_matrix(element[0],element[1],element[2],current_word,expected_matrix,current_index)
-                        current_index += 1
-            index += 1
-        self.expected_feature_matrix = csr_matrix(expected_matrix)
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-""""
-    def createSparseVectorOfFeatures(bigrams,unigrams,trigrams,sentenceNumber,numberOfParams,paramIndex):
-        special_delimiter = "###"#TODO: will be decided outside
-        feature_vec = bsr_matrix((1, numberOfParams)).toarray()
-        sentence_tags = unigrams[sentenceNumber]
-        for word in sentence_tags:
-            vector_index = paramIndex[word+special_delimiter+sentence_tags[word][0][0]]
-            feature_vec[vector_index] = 1
-        sentence_tags = bigrams[sentenceNumber]
-        for word in sentence_tags:
-            vector_index = paramIndex[word + special_delimiter + sentence_tags[word][0][0]+special_delimiter + sentence_tags[word][0][1]]
-            feature_vec[vector_index] = 1
-        sentence_tags = trigrams[sentenceNumber]
-        for word in sentence_tags:
-            vector_index = paramIndex[
-                word + special_delimiter + sentence_tags[word][0][0] + special_delimiter + sentence_tags[word][0][1]+special_delimiter + sentence_tags[word][0][2]]
-            feature_vec[vector_index] = 1
-        return feature_vec"""
-
-"""feature_stats["uni"] = {}
-   feature_stats["bi"] = {}
-   feature_stats["tri"] = {}
-   for feature in params_index:
-       if params_index[feature][0]<14400:
-           feature_stats["uni"][feature] = params_index[feature][1]
-       elif params_index[feature][0]<46629:
-           feature_stats["bi"][feature] = params_index[feature][1]
-       else:
-           feature_stats["tri"][feature] = params_index[feature][1]
-   target1 = open("bi.tsv",'w')
-   for feature in feature_stats["bi"]:
-       target1.write(feature+"\t"+str(feature_stats["bi"][feature])+"\n")
-   target1.close()"""
-
-""" def create_expected_matrix_index(self):
-        trigram_index_of_matries ={}
-        index =0
-        while (index <= self.number_of_dimensions-1):
-            feature = self.reverse_param_index[index]
-            if len(feature.split(self.special_delimiter)) > 3:
-                trigram_data = self.param_index[feature]
-                current_word = feature.split(self.special_delimiter)[0]
-                for words in trigram_data[3]:
-                    trigram_tuple = (current_word,words[0],words[1],)
-                    expected_matrix_rows_number  =1
-                    lists_of_k_most_seen_tags = []
-                    if self.k_most_seen_tags.get(current_word,False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[current_word])
-                        expected_matrix_rows_number *= len(self.k_most_seen_tags[current_word])
-                    if self.k_most_seen_tags.get(words[0],False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[0]])
-                        expected_matrix_rows_number *= len(self.k_most_seen_tags[words[0]])
-                    if self.k_most_seen_tags.get(words[1],False):
-                        lists_of_k_most_seen_tags.append(self.k_most_seen_tags[words[1]])
-                        expected_matrix_rows_number *= len(self.k_most_seen_tags[words[1]])
-                    expected_matrix_per_tag = lil_matrix((expected_matrix_rows_number,self.number_of_dimensions))
-                    current_index = 0
-                    for element in itertools.product(*lists_of_k_most_seen_tags):
-                        expected_matrix_per_tag = self.modify_expected_matrix(element[0],element[1],element[2],current_word,expected_matrix_per_tag,current_index)
-                        current_index += 1
-                    trigram_index_of_matries[trigram_tuple]=csr_matrix(expected_matrix_per_tag)
-            index += 1
-        self.expected_feature_matrix_index = trigram_index_of_matries"""

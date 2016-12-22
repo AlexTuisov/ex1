@@ -3,7 +3,7 @@ from copy import deepcopy
 import sys
 from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
-
+import Preprocessing
 from snowballstemmer import EnglishStemmer as es
 
 import GradientAscent
@@ -21,6 +21,7 @@ class Searcher:
         self.tags_as_tuple = tuple(sorted(list(self.tags.values())))
         self.gradient_ascent = gradient_ascent
         self.vector_v = vector_v
+        self.confusion_matrix = {}
         self.feature_maker = gradient_ascent.feature_maker
 
     def viterbi_full_run(self, pure_test_set, test_set_with_true_tags):
@@ -30,7 +31,8 @@ class Searcher:
         for number, tagged_sentence in enumerate(results_list):
             true_sentence = test_set_with_true_tags[number]
             accuracy_list.append(self.check_outcome((tagged_sentence,), (true_sentence,)))
-        average_accuracy = sum(accuracy_list)/len(accuracy_list)
+        average_accuracy = sum(accuracy_list)/Preprocessing.word_count()
+        print(self.confusion_matrix)
         """print("The average accuracy is:", average_accuracy)
         print("A sample tagged sentance:")
         print(random.choice(results_list))"""
@@ -57,9 +59,9 @@ class Searcher:
             relevant_tags_for_v = self.extract_relevant_tags(k, sentence_as_list_of_pure_words)
             for u in self.tags_as_tuple:
                 for v in self.tags_as_tuple:
-                    """if (v not in relevant_tags_for_v) or (u not in relevant_tags_for_u):
+                    if (u not in relevant_tags_for_u):
                         current_pi_value_table[u][v] = -(sys.float_info.max/1000000)
-                        continue"""
+                        continue
                     results = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k], k, sentence_as_list_of_pure_words)
                     current_pi_value_table[u][v] = results[0]
@@ -134,7 +136,13 @@ class Searcher:
                     count_of_true += 1
                 else:
                     count += 1
-        return float(count_of_true/count)
+                    if not self.confusion_matrix.get(true_tagged_word.split("_")[1], False):
+                        self.confusion_matrix[true_tagged_word.split("_")[1]] = {}
+                    if not self.confusion_matrix[true_tagged_word.split("_")[1]].get(tagged_set[index_of_sentence][index_of_word].split("_")[1],False):
+                        self.confusion_matrix[true_tagged_word.split("_")[1]][tagged_set[index_of_sentence][index_of_word].split("_")[1]] = 1
+                    else:
+                        self.confusion_matrix[true_tagged_word.split("_")[1]][tagged_set[index_of_sentence][index_of_word].split("_")[1]] += 1
+        return count_of_true
 
     def extract_relevant_tags(self, index, sentence):
         if index < 0:
@@ -154,7 +162,7 @@ class Searcher:
 
     def get_open_tags(self):
         #open parts of speech in english
-        open_tags = ("NN", "NNP", "JJ", "NNS", "RB", "VBD", "VB", "VBZ", "VBN", "VBG", "VBP","CD")
+        open_tags = ("NN", "NNP", "JJ", "NNS", "RB", "VBD", "VB", "VBZ", "VBN", "VBG", "CD")
         to_return = []
         for item in open_tags:
             to_return.append(self.tags[item])

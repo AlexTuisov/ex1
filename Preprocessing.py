@@ -168,4 +168,13 @@ def percentage_of_unknown_words():
                     count += 1
                     count_unmatching += 1
     print("The unseen words percentage is:", count_unmatching/count)
+
+
+def word_count():
+    count = 0
+    with open(get_path_to_test_set()) as train:
+        for sentence in train:
+            for word in (sentence.split()):
+                count += 1
+    return count
 #
