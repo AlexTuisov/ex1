@@ -247,10 +247,17 @@ class feature_maker:
 
     def add_features_for_word_extended_model(self,word,current_tag,previous_tag,last_tag,current_index,param_index,sentence_number):
         tags_relevant_upper_case = ["*","."]
-        if self.contain_digit(word):
+        if self.contain_digit(word) and current_tag=="CD":
             feature_name = "<<ContainDigit>>"+self.special_delimiter+current_tag
             if not param_index.get(feature_name, False):
                 param_index[feature_name] = [current_index,1,[sentence_number,]]
+                current_index += 1
+            else:
+                param_index[feature_name][2].append(sentence_number)
+        if current_tag == "NNP" or current_tag=="NN":
+            feature_name = current_tag
+            if not param_index.get(feature_name, False):
+                param_index[feature_name] = [current_index, 1, [sentence_number, ]]
                 current_index += 1
             else:
                 param_index[feature_name][2].append(sentence_number)
@@ -308,7 +315,9 @@ class feature_maker:
     def return_relevat_features(self,word,current_tag,previous_tag,last_tag):
         relevant_features=[]
         tags_relevant_upper_case = ["start","*","."]
-        if self.contain_digit(word):
+        if current_tag == "NNP" or current_tag == "NN":
+            relevant_features.append(current_tag)
+        if self.contain_digit(word) and current_tag=="CD":
             relevant_features.append("<<ContainDigit>>"+self.special_delimiter+current_tag)
         if (self.is_capital(word)) and (previous_tag in tags_relevant_upper_case):
             relevant_features.append("<<UPPERSTART>>"+self.special_delimiter+current_tag)

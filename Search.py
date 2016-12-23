@@ -22,6 +22,8 @@ class Searcher:
         self.gradient_ascent = gradient_ascent
         self.vector_v = vector_v
         self.confusion_matrix = {}
+        self.open_tags_digit ="CD"
+
         self.feature_maker = gradient_ascent.feature_maker
 
     def viterbi_full_run(self, pure_test_set, test_set_with_true_tags):
@@ -59,9 +61,9 @@ class Searcher:
             relevant_tags_for_v = self.extract_relevant_tags(k, sentence_as_list_of_pure_words)
             for u in self.tags_as_tuple:
                 for v in self.tags_as_tuple:
-                    if (u not in relevant_tags_for_u):
+                    """if (u not in relevant_tags_for_u):
                         current_pi_value_table[u][v] = -(sys.float_info.max/1000000)
-                        continue
+                        continue"""
                     results = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k], k, sentence_as_list_of_pure_words)
                     current_pi_value_table[u][v] = results[0]
@@ -147,7 +149,7 @@ class Searcher:
     def extract_relevant_tags(self, index, sentence):
         if index < 0:
             return (self.tags["start"],)
-        if sentence[index] in self.feature_maker.k_most_seen_tags.keys():
+        if sentence[index] in self.feature_maker.k_most_seen_tags:
             to_return = []
             sequence = tuple(self.feature_maker.k_most_seen_tags[sentence[index]])
             for item in sequence:
@@ -158,11 +160,13 @@ class Searcher:
             to_return = tuple(to_return)
             return to_return
         else:
+            if self.feature_maker.contain_digit(sentence[index]):
+                return (self.tags[self.open_tags_digit],)
             return(self.get_open_tags())
 
     def get_open_tags(self):
         #open parts of speech in english
-        open_tags = ("NN", "NNP", "JJ", "NNS", "RB", "VBD", "VB", "VBZ", "VBN", "VBG", "CD")
+        open_tags = ("NN", "NNP", "JJ")
         to_return = []
         for item in open_tags:
             to_return.append(self.tags[item])
