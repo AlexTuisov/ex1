@@ -23,6 +23,13 @@ class Searcher:
         self.vector_v = vector_v
         self.confusion_matrix = {}
         self.open_tags_digit ="CD"
+        self.JJ_specific_suffixes = ("ive", "al", "ous", "ful", "ish", "ic")
+        self.JJS_specific_suffixes = ("est",)
+        self.NNP_specific_suffixes = ("an", )
+        self.NN_specific_suffixes = ("nce", "ancy", "ar", "ism", "ee", "ist", "ion", "ness", "ment", "logy")
+        self.VBN_specific_suffixes = ("ed", "en")
+        self.VB_specific_suffixes = ("ify", "ize", "ate")
+        self.NNS_specific_suffixes = ("s", "es")
 
         self.feature_maker = gradient_ascent.feature_maker
 
@@ -34,7 +41,14 @@ class Searcher:
             true_sentence = test_set_with_true_tags[number]
             accuracy_list.append(self.check_outcome((tagged_sentence,), (true_sentence,)))
         average_accuracy = sum(accuracy_list)/Preprocessing.word_count()
-        print(self.confusion_matrix)
+        summary_of_errors = 0
+        for row_name, row in self.confusion_matrix.items():
+            for name, value in row.items():
+                summary_of_errors += value
+                if value > 49:
+                    print (row_name, name, value)
+        print("The total errors count is:", summary_of_errors)
+        #print(self.confusion_matrix)
         """print("The average accuracy is:", average_accuracy)
         print("A sample tagged sentance:")
         print(random.choice(results_list))"""
@@ -61,9 +75,9 @@ class Searcher:
             relevant_tags_for_v = self.extract_relevant_tags(k, sentence_as_list_of_pure_words)
             for u in self.tags_as_tuple:
                 for v in self.tags_as_tuple:
-                    """if (u not in relevant_tags_for_u):
+                    if (u not in relevant_tags_for_u):
                         current_pi_value_table[u][v] = -(sys.float_info.max/1000000)
-                        continue"""
+                        continue
                     results = self.calculate_pi_value_and_backpointer(
                         u, v, previous_pi_value_table[u], sentence_as_list_of_pure_words[k], k, sentence_as_list_of_pure_words)
                     current_pi_value_table[u][v] = results[0]
@@ -102,6 +116,8 @@ class Searcher:
         tag_before_last = self.postprocessing(tag_before_last, str.lower(sentence[length_of_sentence-3]))
         sentence_as_tags = [last_tag, tag_before_last]
         for index in reversed(range(1, length_of_sentence-1)):
+            if index <= 2:
+                is_first = True
             new_tag = table_of_backpointers[index][tag_before_last][last_tag]
             new_tag = self.postprocessing(new_tag, str.lower(sentence[index-2]))
             sentence_as_tags.append(int(new_tag))
@@ -166,7 +182,7 @@ class Searcher:
 
     def get_open_tags(self):
         #open parts of speech in english
-        open_tags = ("NN", "NNP", "JJ")
+        open_tags = ("NNP",)
         to_return = []
         for item in open_tags:
             to_return.append(self.tags[item])
@@ -183,8 +199,27 @@ class Searcher:
 
     def postprocessing(self, supposed_tag, word):
         actual_tag = supposed_tag
+        if supposed_tag == self.tags["start"]:
+            actual_tag = self.tags["NNP"]
         if word in self.feature_maker.k_most_seen_tags.keys():
             if len(self.feature_maker.k_most_seen_tags[word]) >= 1:
                 if self.feature_maker.k_most_seen_tags[word][0] in self.tags.keys():
                     actual_tag = self.tags[self.feature_maker.k_most_seen_tags[word][0]]
+        else:
+            for suffix in self.NN_specific_suffixes:
+                if word[-len(suffix):] == suffix:
+                    actual_tag = self.tags["NN"]
+                    break
+            for suffix in self.JJ_specific_suffixes:
+                if word[-len(suffix):] == suffix:
+                    actual_tag = self.tags["JJ"]
+                    break
+            for suffix in self.VBN_specific_suffixes:
+                if word[-len(suffix):] == suffix:
+                    actual_tag = self.tags["VBN"]
+                    break
+            for suffix in self.NNS_specific_suffixes:
+                if word[-len(suffix):] == suffix and not word[0].isupper():
+                    actual_tag = self.tags["NNS"]
+                    break
         return actual_tag

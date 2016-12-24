@@ -20,7 +20,7 @@ if __name__ == '__main__':
     fmaker = featureMaker.feature_maker("<<>>",5,True,1)
     fmaker.init_all_params(unigrams,bigrams,trigrams)
     hist = Preprocessing.histogram_of_ngrams(3)
-    lambda_values =[10]
+    lambda_values =[1000]
     for value in lambda_values:
         gascent = g.gradient_ascent(fmaker.number_of_dimensions,value,fmaker,hist)
         hope = gascent.gradient_ascent()
