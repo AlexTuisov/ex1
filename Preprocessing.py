@@ -61,7 +61,7 @@ def prettifying_the_tagged_sentence(sentence):
 
 def get_path_to_training_set():
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train2.wtag")
+    absolute_path = os.path.join(path, "data/train.wtag")
     return absolute_path
 
 def get_path_to_test_set():
