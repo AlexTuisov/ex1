@@ -7,7 +7,7 @@ import GradientAscent as g
 import random
 
 if __name__ == '__main__':
-    extended_model = False
+    extended_model = True
 
 
 
