@@ -13,7 +13,7 @@ if __name__ == '__main__':
     print(tags_count)
     values.reverse()
     Preprocessing.percentage_of_unknown_words()
-    little_test, pure_little_test = Preprocessing.create_little_test(1)
+    little_test, pure_little_test = Preprocessing.create_little_test(0.01)
     unigrams, w = Preprocessing.get_ngrams(1)
     bigrams, w = Preprocessing.get_ngrams(2)
     trigrams, words = Preprocessing.get_ngrams(3)
@@ -28,6 +28,10 @@ if __name__ == '__main__':
         a_a =my_little_viterbi.viterbi_full_run(little_test, pure_little_test)
         print("norm of v = ",np.dot(hope[0],hope[0]))
         print("for lambda = ",value," the average accuracy is = ",a_a)
+        my_little_viterbi.viterbi_output_run(Preprocessing.create_output_set())
+
     print("The time whole program took:", d.datetime.now()-start)
+    print(Preprocessing.create_output_set())
+
 
 

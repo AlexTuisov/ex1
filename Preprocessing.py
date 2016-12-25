@@ -61,7 +61,7 @@ def prettifying_the_tagged_sentence(sentence):
 
 def get_path_to_training_set():
     path = os.path.dirname(__file__)
-    absolute_path = os.path.join(path, "data/train.wtag")
+    absolute_path = os.path.join(path, "data/train2.wtag")
     return absolute_path
 
 def get_path_to_test_set():
@@ -177,4 +177,26 @@ def word_count():
             for word in (sentence.split()):
                 count += 1
     return count
-#
+
+def get_path_to_output():
+    path = os.path.dirname(__file__)
+    absolute_path = os.path.join(path, "data/output.wtag")
+    return absolute_path
+
+def get_competition_set():
+    path = os.path.dirname(__file__)
+    absolute_path = os.path.join(path, "data/comp.words")
+    return absolute_path
+
+def create_output_set():
+    full_set = []
+    with open (get_competition_set()) as competition_set:
+        for text in competition_set:
+            sentences = text.split("\n")
+            for number, sentence in enumerate(sentences):
+                if sentence:
+                    new_sentence = []
+                    for word in sentence.split():
+                        new_sentence.append(word)
+                    full_set.append(new_sentence)
+    return full_set

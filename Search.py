@@ -33,6 +33,14 @@ class Searcher:
 
         self.feature_maker = gradient_ascent.feature_maker
 
+    def viterbi_output_run(self, output_set):
+        with open(Preprocessing.get_path_to_output(), 'w') as output_file:
+            with Pool(4) as p:
+                results_list = p.map(self.viterbi_run_per_sentence, output_set)
+                for tagged_sentence in results_list:
+                    output_file.write((" ").join(tagged_sentence))
+                    output_file.write("\n")
+
     def viterbi_full_run(self, pure_test_set, test_set_with_true_tags):
         accuracy_list = []
         with Pool(4) as p:
@@ -205,6 +213,8 @@ class Searcher:
             if len(self.feature_maker.k_most_seen_tags[word]) >= 1:
                 if self.feature_maker.k_most_seen_tags[word][0] in self.tags.keys():
                     actual_tag = self.tags[self.feature_maker.k_most_seen_tags[word][0]]
+            if self.feature_maker.k_most_seen_tags[word][0] == self.tags["NNP"] and not word[0].isupper():
+                actual_tag = self.tags["NN"]
         else:
             for suffix in self.NN_specific_suffixes:
                 if word[-len(suffix):] == suffix:
